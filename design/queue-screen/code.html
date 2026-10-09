@@ -1,0 +1,565 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>HA Premium Video Downloader</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "window-bg": "#0B0F0C",
+            "card-glass": "rgba(20, 28, 22, 0.65)",
+            "primary": "#0FD920",
+            "primary-hover": "#0BB81B",
+            "primary-highlight": "#13FE27",
+            "heading": "#F0FDF4",
+            "body-text": "#DCFCE7",
+            "muted": "#718E76",
+            "border-accent": "rgba(15, 217, 32, 0.15)",
+            "border-accent-strong": "rgba(15, 217, 32, 0.28)",
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['Inter', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      background: #060907;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+  </style>
+<meta content="web_standard" name="shell-type"></head>
+<body class="text-body-text antialiased">
+<!-- Desktop App Frame: Exactly 850px x 600px with strict overflow hidden -->
+<div class="relative w-[850px] h-[600px] max-w-[850px] max-h-[600px] bg-window-bg rounded-[22px] border border-border-accent flex flex-col overflow-hidden shadow-[0_24px_70px_rgba(0,0,0,0.85),0_0_40px_rgba(15,217,32,0.06)]">
+<!-- 1. Window Title Bar: 44px Fixed -->
+<header class="h-[44px] shrink-0 px-4 bg-[#0E1410] border-b border-border-accent flex items-center justify-between">
+<!-- Left: Logo & App Title -->
+<div class="flex items-center gap-2.5">
+<div class="w-6 h-6 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[17px]">download_for_offline</span>
+</div>
+<span class="font-semibold text-[13px] tracking-tight text-heading">HA Premium Video Downloader</span>
+</div>
+<!-- Right: Status Pill & Window Controls -->
+<div class="flex items-center gap-3">
+<!-- Compact Status Pill -->
+<div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#141F16] border border-border-accent">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span class="font-mono text-[11px] font-medium text-heading">Engine Ready</span>
+</div>
+<!-- Native Window Controls -->
+<div class="flex items-center gap-1 ml-1">
+<button aria-label="Minimize Window" class="w-7 h-7 rounded-md flex items-center justify-center text-muted hover:text-heading hover:bg-[#1A251D] transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">remove</span>
+</button>
+<button aria-label="Close Window" class="w-7 h-7 rounded-md flex items-center justify-center text-muted hover:text-white hover:bg-[#DC2626] transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">close</span>
+</button>
+</div>
+</div>
+</header>
+<!-- 2. Tab Navigation Bar: 46px Fixed -->
+<nav class="h-[46px] shrink-0 px-4 bg-[#0D120E] border-b border-border-accent flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<!-- Downloader (Active) -->
+<a class="px-4 py-1.5 rounded-full bg-primary text-[#003803] font-semibold text-[12px] shadow-[0_0_14px_rgba(15,217,32,0.35)] flex items-center gap-1.5 transition-all" href="#">
+<span class="material-symbols-outlined text-[16px]">download</span>
+<span>Downloader</span>
+</a>
+<!-- Queue -->
+<a class="px-3.5 py-1.5 rounded-full text-muted hover:text-heading hover:bg-[#152018] text-[12px] font-medium transition-all flex items-center gap-1.5" href="#">
+<span>Queue</span>
+<span class="px-1.5 py-0.2 rounded-full bg-[#18261B] text-primary text-[10px] font-mono font-semibold border border-primary/20">2</span>
+</a>
+<!-- Library -->
+<a class="px-3.5 py-1.5 rounded-full text-muted hover:text-heading hover:bg-[#152018] text-[12px] font-medium transition-all" href="#">
+          Library
+        </a>
+<!-- Settings -->
+<a class="px-3.5 py-1.5 rounded-full text-muted hover:text-heading hover:bg-[#152018] text-[12px] font-medium transition-all" href="#">
+          Settings
+        </a>
+</div>
+<!-- Quick mode info -->
+<div class="font-mono text-[11px] text-muted flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary/60"></span>
+<span>Direct Stream Pipe</span>
+</div>
+</nav>
+<!-- 3. Main Content Body: fills remaining 510px, zero scrollbars, exactly fitted -->
+<main class="flex-1 p-[16px] flex flex-col justify-between overflow-hidden"><div class="flex flex-col w-full h-full justify-between">
+<!-- Dynamic View Switcher Container -->
+<div class="flex flex-col h-full justify-between" id="queueViewportContainer">
+<!-- Header Panel: Telemetry & Batch Controls -->
+<section class="flex items-center justify-between shrink-0 mb-3 px-1">
+<div class="flex items-baseline gap-2.5">
+<h1 class="font-headline-md text-headline-md text-heading tracking-tight">Active Downloads</h1>
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-low shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_currentColor]"></span>
+<span class="font-code-telemetry text-label-sm text-outline tracking-wider uppercase" id="queueStatusSummary">2 in progress • 4 total</span>
+</div>
+</div>
+<!-- Action Cluster -->
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-variant text-on-surface-variant hover:text-heading transition-all shadow-sm" id="toggleEmptyStateBtn" type="button">
+<span class="material-symbols-outlined text-[15px] text-outline">tune</span>
+<span class="font-label-md text-label-md">Simulate Empty</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-variant text-body-text hover:text-heading transition-all shadow-sm" id="pauseAllBtn" type="button">
+<span class="material-symbols-outlined text-[15px] text-primary" id="pauseAllIcon">pause_circle</span>
+<span class="font-label-md text-label-md" id="pauseAllText">Pause All</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-error/20 text-on-surface-variant hover:text-error transition-all shadow-sm" id="clearCompletedBtn" type="button">
+<span class="material-symbols-outlined text-[15px]">cleaning_services</span>
+<span class="font-label-md text-label-md">Clear Finished</span>
+</button>
+</div>
+</section>
+<!-- Queue List: 4 Obsidian Glass Task Cards (Desktop Fitted Layout) -->
+<div class="flex-1 flex flex-col gap-2 overflow-hidden justify-between" id="queueListGrid">
+<!-- Card 1: DOWNLOADING (Active 64%) -->
+<article class="p-2.5 rounded-xl bg-surface-container-low/90 backdrop-blur-md shadow-md flex items-center gap-3 relative overflow-hidden group hover:bg-surface-container/80 transition-all" id="itemDownloading">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_12px_#44f740]"></div>
+<!-- Thumbnail Container -->
+<div class="relative w-[112px] h-[63px] shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest shadow-inner">
+<img class="w-full h-full object-cover" data-alt="High tech dark mode software architecture flowchart thumbnail with glowing green network nodes, clean visual presentation, 4k digital render." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAleU8-6HNyTyI0EglwRHfrCUKlmXcLsDgJX6cvk-RWaFt3sKUFu4PqhMEmG9jJBlC1v6fzSDKxS4A9-4Ykpa6QkteGZCkX8cm0MODLp197E6Xy0rqSIsNCgJDUk6sxwciNPPeqzq6yAWDoWrGDa5r5GZ0fdsrqqOhVPW2Vh-US2964QulTApxp0Xaqfo7NU9EDk7ifXeN2f7wrrSl_tNmCIMBzkbtXh3FFCZbWDKM">
+<span class="absolute bottom-1 right-1 px-1 rounded bg-surface-container-lowest/90 font-code-telemetry text-label-sm text-heading">18:42</span>
+<span class="absolute top-1 left-1 w-4 h-4 rounded bg-surface-container-lowest/80 backdrop-blur-sm flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+</span>
+</div>
+<!-- Task Info & Telemetry -->
+<div class="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-lg text-label-lg text-heading truncate">Advanced TypeScript Architecture for Large Engineering Teams</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-primary font-code-telemetry text-label-sm shrink-0">1080p MP4</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-outline font-label-sm text-label-sm shrink-0">YouTube</span>
+</div>
+<span class="font-code-telemetry text-label-lg text-primary font-bold">64%</span>
+</div>
+<!-- Glowing Progress Bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden my-1">
+<div class="h-full bg-primary rounded-full transition-all duration-300 shadow-[0_0_10px_#44f740]" style="width: 64%;"></div>
+</div>
+<!-- Bottom Telemetry Stats -->
+<div class="flex items-center justify-between font-code-telemetry text-body-sm text-outline">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-[13px] animate-pulse">downloading</span>
+<span>8.4 MB/s</span>
+</span>
+<span>ETA: 00:42 left</span>
+<span>312 MB / 480 MB</span>
+</div>
+<span class="text-on-surface-variant font-label-sm">Chunk #4/6 Active</span>
+</div>
+</div>
+<!-- Inline Action Controls -->
+<div class="flex items-center gap-1 shrink-0 pl-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-variant text-heading flex items-center justify-center transition-colors shadow-sm" title="Pause Stream" type="button">
+<span class="material-symbols-outlined text-[17px]">pause</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-error-container text-outline hover:text-on-error-container flex items-center justify-center transition-colors shadow-sm" title="Cancel Task" type="button">
+<span class="material-symbols-outlined text-[17px]">close</span>
+</button>
+</div>
+</article>
+<!-- Card 2: PAUSED (Inactive 31%) -->
+<article class="p-2.5 rounded-xl bg-surface-container-low/70 backdrop-blur-md shadow-md flex items-center gap-3 relative overflow-hidden group hover:bg-surface-container/70 transition-all opacity-85 hover:opacity-100" id="itemPaused">
+<div class="relative w-[112px] h-[63px] shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest shadow-inner">
+<img class="w-full h-full object-cover grayscale-[30%]" data-alt="Cyberpunk anime city night raining neon lofi aesthetic ambient illustration album cover green and black mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMZ1zs64pUyEBJRbqAx7OQtG1bYUkt2kNEkEOoWUzvoOB3JrSSs2HfnbTx9Mo1HH7qzfO8ZBBJtRK0h8kJHuqITWaEo3nGaS_v_gDU7lAZ3R4i8qzBSe-jVrV4LwSwu853Gep9ja3sCcgurp8TRnYaJf5laeWiRzXO4_Anuj1Jida4TXiOBz9XzyJMIQDC7raioylTvFAGQYpF9_cNDVqvaLprQhGeIxPhAoz0gyc">
+<span class="absolute bottom-1 right-1 px-1 rounded bg-surface-container-lowest/90 font-code-telemetry text-label-sm text-outline">Audio</span>
+<span class="absolute top-1 left-1 w-4 h-4 rounded bg-surface-container-lowest/80 backdrop-blur-sm flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[11px]">headphones</span>
+</span>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-lg text-label-lg text-on-surface truncate">Lofi Beats - Deep Focus &amp; Study Session 2025</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-on-surface-variant font-code-telemetry text-label-sm shrink-0">320kbps MP3</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-outline font-label-sm text-label-sm shrink-0">SoundCloud</span>
+</div>
+<span class="font-code-telemetry text-label-lg text-outline">31%</span>
+</div>
+<!-- Muted Static Progress Bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden my-1">
+<div class="h-full bg-outline rounded-full transition-all" style="width: 31%;"></div>
+</div>
+<div class="flex items-center justify-between font-code-telemetry text-body-sm text-outline">
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant">Paused</span>
+<span>Speed: 0 KB/s</span>
+<span>14.2 MB / 45.8 MB</span>
+</div>
+<span class="text-outline font-label-sm">Idle</span>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0 pl-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-primary-container text-primary hover:text-on-primary-container flex items-center justify-center transition-colors shadow-sm" title="Resume Stream" type="button">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-error-container text-outline hover:text-on-error-container flex items-center justify-center transition-colors shadow-sm" title="Cancel Task" type="button">
+<span class="material-symbols-outlined text-[17px]">close</span>
+</button>
+</div>
+</article>
+<!-- Card 3: MERGING (Stream Processing ffmpeg 98%) -->
+<article class="p-2.5 rounded-xl bg-surface-container-low/90 backdrop-blur-md shadow-md flex items-center gap-3 relative overflow-hidden group hover:bg-surface-container/80 transition-all" id="itemMerging">
+<div class="relative w-[112px] h-[63px] shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest shadow-inner">
+<img class="w-full h-full object-cover" data-alt="Abstract 3D emerald glass crystalline geometric render dark obsidian background cinema 4d lighting studio." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-K8xLU1wRZx8_rUKFqxzS-Y_5qCDgBCG7fKX4P68mASMTDpmT0R0G9yPCOLgQLN9bOOu3b80G6tYmFns1gLeWgYrTAmWiZJH-TnBhA5vWUOeOol-_A4DO0MRpLybhYatqpw3BG20Je_uuVrWgJmYwF9dOD05scK46yO2yagMDuhSVdm5SGYIEiB2PZ5Jk60bqDKrysjf67Zq79x6BE9_tC7mvhuCfW1oC3cCi_0g">
+<span class="absolute bottom-1 right-1 px-1 rounded bg-surface-container-lowest/90 font-code-telemetry text-label-sm text-heading">42:15</span>
+<span class="absolute top-1 left-1 w-4 h-4 rounded bg-surface-container-lowest/80 backdrop-blur-sm flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[11px]">motion_blur</span>
+</span>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-lg text-label-lg text-heading truncate">Cinema 4D &amp; Octane Render Mastery Walkthrough</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-primary font-code-telemetry text-label-sm shrink-0">4K MKV</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-outline font-label-sm text-label-sm shrink-0">Vimeo</span>
+</div>
+<span class="font-code-telemetry text-label-lg text-tertiary animate-pulse">98%</span>
+</div>
+<!-- Animated Merging Stream Shimmer -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden my-1 relative">
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container via-primary to-tertiary opacity-90 animate-[pulse_1.5s_infinite]"></div>
+</div>
+<div class="flex items-center justify-between font-code-telemetry text-body-sm text-outline">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[13px] animate-spin">refresh</span>
+<span class="text-tertiary">Muxing audio &amp; video streams (FFmpeg pipe)...</span>
+</div>
+<span class="text-outline font-label-sm">Almost ready</span>
+</div>
+</div>
+<div class="flex items-center gap-1 shrink-0 pl-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container/40 text-outline/40 flex items-center justify-center cursor-not-allowed" disabled="" title="Processing cannot be paused" type="button">
+<span class="material-symbols-outlined text-[17px]">pause</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-error-container text-outline hover:text-on-error-container flex items-center justify-center transition-colors shadow-sm" title="Abort Process" type="button">
+<span class="material-symbols-outlined text-[17px]">close</span>
+</button>
+</div>
+</article>
+<!-- Card 4: COMPLETED (Finished 100%) -->
+<article class="p-2.5 rounded-xl bg-surface-container-low/90 backdrop-blur-md shadow-md flex items-center gap-3 relative overflow-hidden group hover:bg-surface-container/80 transition-all" id="itemCompleted">
+<div class="relative w-[112px] h-[63px] shrink-0 rounded-lg overflow-hidden bg-surface-container-lowest shadow-inner">
+<img class="w-full h-full object-cover" data-alt="High quality UI design mockups dark green glass interface dashboard clean layout photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXfJhOy6H5ZW74OAYfiuPgEz0CR7Ziootig8NIECWZ3mCDb90OtRb5Mkkxnk2qLri85LoNYvAwMpythwv2icUFC5bG-n33v05c8b_ikOWZF3QOdBKDw2jds99T1mwbDDIE5qwElLzw1-PmkRjg4nGTsGPqQPP_KwPcAp9aZPrhL3QmVUah1HqoZ8dhv5x7CAme4RZkh87Jc3KnvqeRQVTPLyGNFiCD36B_USdXIUg">
+<span class="absolute inset-0 bg-surface-container-lowest/40 backdrop-blur-[1px] flex items-center justify-center">
+<span class="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-[0_0_8px_#44f740]">
+<span class="material-symbols-outlined text-[14px] font-bold">check</span>
+</span>
+</span>
+</div>
+<div class="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+<div class="flex items-center justify-between gap-2">
+<div class="flex items-center gap-2 min-w-0">
+<span class="font-label-lg text-label-lg text-heading truncate">Designing High-Fidelity UI Systems with Tailwind &amp; Glassmorphism</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-on-surface-variant font-code-telemetry text-label-sm shrink-0">1440p MP4</span>
+<span class="px-1.5 py-0.2 rounded-full bg-surface-container text-outline font-label-sm text-label-sm shrink-0">YouTube</span>
+</div>
+<span class="font-code-telemetry text-label-sm text-primary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">verified</span> Done
+            </span>
+</div>
+<!-- Finished Static Bar -->
+<div class="w-full h-1.5 rounded-full bg-surface-container-highest overflow-hidden my-1">
+<div class="h-full bg-primary/40 rounded-full" style="width: 100%;"></div>
+</div>
+<div class="flex items-center justify-between font-code-telemetry text-body-sm text-outline">
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant">Completed 2m ago</span>
+<span>Size: 1.14 GB</span>
+<span>Bitrate: 18.2 Mbps</span>
+</div>
+<span class="text-outline font-label-sm">Saved locally</span>
+</div>
+</div>
+<!-- Finished Item Actions -->
+<div class="flex items-center gap-1 shrink-0 pl-1">
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-variant text-heading flex items-center justify-center transition-colors shadow-sm" title="Play Media File" type="button">
+<span class="material-symbols-outlined text-[17px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-variant text-heading flex items-center justify-center transition-colors shadow-sm" title="Reveal in Finder / Folder" type="button">
+<span class="material-symbols-outlined text-[17px]">folder_open</span>
+</button>
+<button class="w-8 h-8 rounded-lg bg-surface-container hover:bg-surface-variant text-outline hover:text-heading flex items-center justify-center transition-colors shadow-sm" title="More Operations" type="button">
+<span class="material-symbols-outlined text-[17px]">more_horiz</span>
+</button>
+</div>
+</article>
+</div>
+<!-- Empty State View Alternative (Hidden by default, can be toggled) -->
+<div class="hidden flex-1 flex-col items-center justify-center text-center p-8 rounded-xl bg-surface-container-low/50 backdrop-blur-md shadow-inner my-2" id="queueEmptyState">
+<div class="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center text-primary shadow-[0_0_24px_rgba(15,217,32,0.12)] mb-3">
+<span class="material-symbols-outlined text-[36px]">move_to_inbox</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-heading mb-1">Queue is Clear</h3>
+<p class="font-body-md text-body-md text-outline max-w-[280px] mb-4">Paste links in the Downloader tab to queue high-res media streams.</p>
+<button class="px-5 py-2 rounded-full bg-primary hover:bg-primary-hover text-on-primary font-label-lg text-label-lg flex items-center gap-2 shadow-[0_0_20px_rgba(15,217,32,0.35)] transition-all" id="returnToDownloaderBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">add_link</span>
+<span>Go to Downloader</span>
+</button>
+</div>
+<!-- Bottom Global Pipeline Status Strip -->
+<footer class="h-[32px] shrink-0 mt-2 px-3 rounded-lg bg-surface-container-low flex items-center justify-between font-code-telemetry text-body-sm text-outline shadow-sm">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span>Global Throughput: 8.4 MB/s</span>
+</div>
+<span>•</span>
+<span>Active Workers: 2 of 4</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="text-on-surface-variant">Storage: 420.8 GB free on /MediaVault</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container font-label-sm text-primary uppercase">Turbo Mode</span>
+</div>
+</footer>
+</div>
+</div>
+<script>
+  (function () {
+    // 1. Synchronize App Shell Tab Bar states for Screen 2 (Queue Active)
+    const navLinks = document.querySelectorAll('nav a');
+    if (navLinks && navLinks.length >= 2) {
+      // Downloader (Turn Inactive)
+      navLinks[0].className = 'px-3.5 py-1.5 rounded-full text-muted hover:text-heading hover:bg-[#152018] text-[12px] font-medium transition-all flex items-center gap-1.5';
+      
+      // Queue (Turn ACTIVE Glowing Pill)
+      navLinks[1].className = 'px-4 py-1.5 rounded-full bg-primary text-[#003803] font-semibold text-[12px] shadow-[0_0_14px_rgba(15,217,32,0.35)] flex items-center gap-1.5 transition-all';
+      
+      // Update badge in shell nav
+      const badge = navLinks[1].querySelector('span:last-child');
+      if (badge) {
+        badge.className = 'px-1.5 py-0.2 rounded-full bg-[#003803] text-primary text-[10px] font-mono font-bold';
+        badge.textContent = '4';
+      }
+    }
+
+    // 2. Micro-interactions: Pause All / Resume All Toggle
+    const pauseAllBtn = document.getElementById('pauseAllBtn');
+    const pauseAllIcon = document.getElementById('pauseAllIcon');
+    const pauseAllText = document.getElementById('pauseAllText');
+    let isPausedAll = false;
+
+    if (pauseAllBtn) {
+      pauseAllBtn.addEventListener('click', () => {
+        isPausedAll = !isPausedAll;
+        if (isPausedAll) {
+          pauseAllIcon.textContent = 'play_circle';
+          pauseAllText.textContent = 'Resume All';
+          pauseAllBtn.classList.add('text-primary');
+        } else {
+          pauseAllIcon.textContent = 'pause_circle';
+          pauseAllText.textContent = 'Pause All';
+          pauseAllBtn.classList.remove('text-primary');
+        }
+      });
+    }
+
+    // 3. Clear Completed Card Interaction
+    const clearCompletedBtn = document.getElementById('clearCompletedBtn');
+    const itemCompleted = document.getElementById('itemCompleted');
+    const queueStatusSummary = document.getElementById('queueStatusSummary');
+
+    if (clearCompletedBtn && itemCompleted) {
+      clearCompletedBtn.addEventListener('click', () => {
+        itemCompleted.style.opacity = '0';
+        itemCompleted.style.transform = 'translateY(10px)';
+        itemCompleted.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+          itemCompleted.style.display = 'none';
+          if (queueStatusSummary) {
+            queueStatusSummary.textContent = '2 in progress • 3 total';
+          }
+        }, 300);
+      });
+    }
+
+    // 4. Toggle between Filled Queue and Empty State Showcase
+    const toggleEmptyBtn = document.getElementById('toggleEmptyStateBtn');
+    const queueListGrid = document.getElementById('queueListGrid');
+    const queueEmptyState = document.getElementById('queueEmptyState');
+    const returnToDownloaderBtn = document.getElementById('returnToDownloaderBtn');
+
+    if (toggleEmptyBtn && queueListGrid && queueEmptyState) {
+      toggleEmptyBtn.addEventListener('click', () => {
+        const isHidden = queueEmptyState.classList.contains('hidden');
+        if (isHidden) {
+          queueListGrid.classList.add('hidden');
+          queueListGrid.classList.remove('flex');
+          queueEmptyState.classList.remove('hidden');
+          queueEmptyState.classList.add('flex');
+          toggleEmptyBtn.querySelector('span:last-child').textContent = 'Show 4 Items';
+        } else {
+          queueEmptyState.classList.add('hidden');
+          queueEmptyState.classList.remove('flex');
+          queueListGrid.classList.remove('hidden');
+          queueListGrid.classList.add('flex');
+          toggleEmptyBtn.querySelector('span:last-child').textContent = 'Simulate Empty';
+        }
+      });
+    }
+
+    if (returnToDownloaderBtn && toggleEmptyBtn) {
+      returnToDownloaderBtn.addEventListener('click', () => {
+        toggleEmptyBtn.click();
+      });
+    }
+  })();
+</script></main>
+<!-- Inline Active Download Simulation Toast (Overlay above main bottom if clicked) -->
+<div class="hidden absolute bottom-3 left-4 right-4 p-3 rounded-[16px] bg-[#0E1611]/95 border border-primary/40 backdrop-blur-xl shadow-2xl flex-col gap-1.5 z-20" id="downloadingToast">
+<div class="flex items-center justify-between text-[11px]">
+<div class="flex items-center gap-1.5 text-heading font-medium">
+<span class="material-symbols-outlined text-primary text-[15px] animate-spin">sync</span>
+<span>Downloading 4K Stream</span>
+</div>
+<div class="flex items-center gap-2 font-mono text-[11px]">
+<span class="text-primary font-bold" id="progressPercent">42%</span>
+<span class="text-muted" id="downloadSpeed">78.4 MB/s</span>
+</div>
+</div>
+<div class="w-full h-1.5 rounded-full bg-[#070B08] overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-200 shadow-[0_0_8px_rgba(15,217,32,0.8)]" id="progressBarFill" style="width: 42%;"></div>
+</div>
+<div class="flex items-center justify-between text-[9px] font-mono text-muted">
+<span>Saving to /Volumes/MediaVault/Downloads</span>
+<span>ETA: 00:08 • Remaining: 278 MB</span>
+</div>
+</div>
+</div>
+<script>
+    (function () {
+      const urlInput = document.getElementById('urlInput');
+      const clearBtn = document.getElementById('clearBtn');
+      const pasteBtn = document.getElementById('pasteBtn');
+      const modeVideoBtn = document.getElementById('modeVideoBtn');
+      const modeAudioBtn = document.getElementById('modeAudioBtn');
+      const qualitySelect = document.getElementById('qualitySelect');
+      const videoEstimateText = document.getElementById('videoEstimateText');
+      const mainDownloadBtn = document.getElementById('mainDownloadBtn');
+      const downloadingToast = document.getElementById('downloadingToast');
+      const progressBarFill = document.getElementById('progressBarFill');
+      const progressPercent = document.getElementById('progressPercent');
+      const changeFolderBtn = document.getElementById('changeFolderBtn');
+      const folderPathDisplay = document.getElementById('folderPathDisplay');
+
+      // Clear input
+      if (clearBtn && urlInput) {
+        clearBtn.addEventListener('click', () => {
+          urlInput.value = '';
+          urlInput.focus();
+        });
+      }
+
+      // Paste trigger
+      if (pasteBtn && urlInput) {
+        pasteBtn.addEventListener('click', async () => {
+          try {
+            if (navigator.clipboard && navigator.clipboard.readText) {
+              const text = await navigator.clipboard.readText();
+              if (text) urlInput.value = text;
+            } else {
+              urlInput.value = 'https://youtu.be/dQw4w9WgXcQ';
+            }
+          } catch {
+            urlInput.value = 'https://youtu.be/dQw4w9WgXcQ';
+          }
+        });
+      }
+
+      // Format Selector
+      if (modeVideoBtn && modeAudioBtn) {
+        modeVideoBtn.addEventListener('click', () => {
+          modeVideoBtn.className = 'px-2.5 py-0.5 rounded-full bg-primary text-[#003803] font-semibold text-[10px] shadow-sm transition-all';
+          modeAudioBtn.className = 'px-2.5 py-0.5 rounded-full text-muted hover:text-heading text-[10px] font-medium transition-all';
+        });
+
+        modeAudioBtn.addEventListener('click', () => {
+          modeAudioBtn.className = 'px-2.5 py-0.5 rounded-full bg-primary text-[#003803] font-semibold text-[10px] shadow-sm transition-all';
+          modeVideoBtn.className = 'px-2.5 py-0.5 rounded-full text-muted hover:text-heading text-[10px] font-medium transition-all';
+        });
+      }
+
+      // Quality change updates estimate & CTA button text
+      const estimates = {
+        '2160': 'Estimated size: ~480 MB',
+        '1440': 'Estimated size: ~260 MB',
+        '1080': 'Estimated size: ~140 MB',
+        '720': 'Estimated size: ~75 MB'
+      };
+
+      if (qualitySelect && videoEstimateText) {
+        qualitySelect.addEventListener('change', (e) => {
+          const val = e.target.value;
+          videoEstimateText.querySelector('span:last-child').textContent = estimates[val] || 'Estimated size: ~180 MB';
+        });
+      }
+
+      // Change destination simulation
+      if (changeFolderBtn && folderPathDisplay) {
+        changeFolderBtn.addEventListener('click', () => {
+          const paths = [
+            '/Volumes/MediaVault/Downloads/HA-Downloader',
+            '/Users/Desktop/Downloads',
+            '/Volumes/ArchiveDrive/Media'
+          ];
+          const current = folderPathDisplay.textContent;
+          const nextIndex = (paths.indexOf(current) + 1) % paths.length;
+          folderPathDisplay.textContent = paths[nextIndex];
+        });
+      }
+
+      // Download Simulation
+      let progressTimer = null;
+      if (mainDownloadBtn && downloadingToast) {
+        mainDownloadBtn.addEventListener('click', () => {
+          downloadingToast.classList.remove('hidden');
+          downloadingToast.classList.add('flex');
+          let current = 20;
+          if (progressTimer) clearInterval(progressTimer);
+
+          progressTimer = setInterval(() => {
+            current += Math.floor(Math.random() * 9) + 5;
+            if (current >= 100) {
+              current = 100;
+              clearInterval(progressTimer);
+              setTimeout(() => {
+                downloadingToast.classList.add('hidden');
+                downloadingToast.classList.remove('flex');
+              }, 1600);
+            }
+            if (progressBarFill) progressBarFill.style.width = current + '%';
+            if (progressPercent) progressPercent.textContent = current + '%';
+          }, 240);
+        });
+      }
+    })();
+  </script>
+</body></html>
