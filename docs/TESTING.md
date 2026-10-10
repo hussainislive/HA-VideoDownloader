@@ -37,6 +37,13 @@ Unit tests cover:
 
 Component tests cover Button state, Switch behavior, Select keyboard selection, and SegmentedControl roles and interaction.
 
+Phase 3 component and renderer-store tests additionally cover:
+
+- idle, probing, ready, and error URL-card states plus the keep-link shortcut;
+- queued, starting, downloading, processing, paused, completed, failed, and canceled cards;
+- completed file actions and normalized-store object identity;
+- a React Profiler assertion showing one changed job re-renders its subscriber while an untouched job renders zero times.
+
 Phase 2 unit and integration tests additionally cover:
 
 - streaming UTF-8/CRLF splitting, huge output, exit codes, and process-tree killing including a grandchild;
@@ -55,6 +62,15 @@ Electron E2E covers:
 - zero serious or critical axe violations on every tab;
 - a settled Electron visual snapshot at 850×600.
 
+Phase 3 Electron E2E additionally covers:
+
+- paste → probe → 1080p/MP4 → enqueue → progress → completion toast → spied open-folder action;
+- live queue badge counts, pause/resume/cancel confirmation, failure/retry, and audio extraction;
+- stale-probe cancellation and a ready engine status when launching the production bundle;
+- zero serious/critical axe findings on Downloader and Queue;
+- reviewed snapshots at 850×600 and 1280×800 with no content scrolling;
+- at least 55 requestAnimationFrame callbacks in one second while three jobs actively progress.
+
 axe uses its documented legacy aggregation mode because Playwright's default blank-page aggregator cannot create a second target through Electron automation. The application has no frames, so cross-origin frame coverage is not lost.
 
 The visual assertion waits for the BrowserWindow fade, the lazy screen, and local fonts before Playwright compares two stable frames with animations disabled. This prevents startup paint timing from creating a black or partially shifted baseline.
@@ -63,7 +79,7 @@ The visual assertion waits for the BrowserWindow fade, the lazy screen, and loca
 
 Each Electron test receives a temporary `userData` directory and removes it after shutdown. The launcher strips the ambient `ELECTRON_RUN_AS_NODE` variable before starting Electron. Failed startup waits close the app and delete their temporary profile, preventing orphan windows.
 
-No UI contains fake job, history, engine, storage, or throughput data. The Phase 2 fake engine selected through `HA_TEST_ENGINE_SCRIPT` makes automated download flows deterministic without reaching the network.
+No production UI contains fake job, history, engine, storage, or throughput data. The fake engine selected through `HA_TEST_ENGINE_SCRIPT` makes automated download flows deterministic without reaching the network and is available only to unpackaged test builds.
 
 The fake engine lives at `tests/fixtures/fake-engine/index.mjs`. Its magic URL
 paths include `/ok`, `/slow`, `/crash`, `/stall`, `/merge-fail`,
@@ -95,7 +111,9 @@ The live suite probes the vertical clip, downloads the 480p video, verifies
 both video and audio streams plus duration within one second using `ffmpeg -i`,
 extracts MP3, interrupts a rate-limited real download, checks `ps` after the
 tree kill, resumes the `.part`, and compares its final byte size with the clean
-download.
+download. Phase 3 also launches the real Electron UI, probes the short
+Creative Commons video, downloads it through Downloader and Queue, and verifies
+the completed file exists with non-zero bytes.
 
 ## Verified yt-dlp flags
 
@@ -122,7 +140,7 @@ Only update snapshots after intentional UI changes and inspect the resulting PNG
 
 ```sh
 npm run build
-npx playwright test --grep "shell baseline" --update-snapshots
+npx playwright test tests/e2e/phase3-visual.spec.ts --update-snapshots
 ```
 
-Commit the reviewed file under `tests/e2e/visual/` and copy the current hero image to `docs/images/` when README visuals change.
+The Phase 3 visual test writes reviewed baselines under `tests/e2e/visual/` and current README captures directly into `docs/images/`.

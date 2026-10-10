@@ -1,6 +1,6 @@
 {
   "name": "ha-premium-video-downloader",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A private, polished desktop interface for yt-dlp and ffmpeg.",
   "main": "./out/main/index.js",
   "author": "Hussain Ahmed",

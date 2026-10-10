@@ -16,8 +16,8 @@ references. The source files remain unchanged.
 - Replace raw colors with semantic `@theme` tokens. Glass card alpha follows
   the screens at 0.62 rather than the older 0.60 design note.
 - Hide the Queue badge at zero; the reference's counts are demo data.
-- Replace “Engine Ready” with “Engine setup pending” until Phase 2 can report a
-  real binary status.
+- Bind the title-bar pill to the real binary status. It reports checking, ready,
+  or problem without invented versions or health data.
 
 ## Downloader reference
 
@@ -28,6 +28,13 @@ references. The source files remain unchanged.
 - Remove WebM, FLAC, and 192 kbps options; v1 supports MP4/MKV and
   MP3/M4A/WAV at 320/256/128 kbps.
 - Native themed Select components replace the HTML `<select>` controls.
+- The video and audio variants share one real option card instead of displaying
+  both reference variants simultaneously. Only options applicable to the
+  selected download kind are shown.
+- The preview uses the probed remote thumbnail when available and an honest
+  unavailable state otherwise; the reference's sample image never ships.
+- Estimated size and free space come from the engine and filesystem. Unknown
+  values render as unavailable rather than using the reference's sample data.
 
 ## Queue reference
 
@@ -36,6 +43,10 @@ references. The source files remain unchanged.
   throughput/storage, remote thumbnails, and duplicate downloader scripts.
 - List rows will use solid surfaces without backdrop blur for scroll
   performance; progress fill will animate with `transform: scaleX`.
+- The real queue sorts active, waiting, paused, then newest terminal jobs. It
+  omits the reference's fabricated worker labels and displays only engine data.
+- At 850×600 the reference's dense proportions are preserved; at wider sizes
+  rows grow horizontally rather than becoming taller.
 
 ## Library reference
 
