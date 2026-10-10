@@ -1,0 +1,76 @@
+{
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:WP25Post1.webm",
+  "capturedWith": "yt-dlp 2026.08.19",
+  "id": "181906531",
+  "title": "WP25Post1",
+  "uploader": "EJacubovich-WMF",
+  "duration": 13.091000000000001,
+  "webpage_url": "https://commons.wikimedia.org/wiki/File:WP25Post1.webm",
+  "extractor_key": "Wikimedia",
+  "formats": [
+    {
+      "format_id": "0",
+      "width": 136,
+      "height": 240,
+      "ext": "webm",
+      "vcodec": "vp9",
+      "acodec": "opus",
+      "tbr": 238,
+      "abr": null,
+      "filesize_approx": 389457
+    },
+    {
+      "format_id": "1",
+      "width": 202,
+      "height": 360,
+      "ext": "mov",
+      "vcodec": "mp4v",
+      "acodec": "none",
+      "tbr": 948,
+      "abr": 0,
+      "filesize_approx": 1551283
+    },
+    {
+      "format_id": "2",
+      "width": 270,
+      "height": 480,
+      "ext": "webm",
+      "vcodec": "vp9",
+      "acodec": "opus",
+      "tbr": 506,
+      "abr": null,
+      "filesize_approx": 828005
+    },
+    {
+      "format_id": "3",
+      "width": 608,
+      "height": 1080,
+      "ext": "webm",
+      "vcodec": "vp9",
+      "acodec": "opus",
+      "tbr": 1427,
+      "abr": null,
+      "filesize_approx": 2335107
+    },
+    {
+      "format_id": "4",
+      "width": 1080,
+      "height": 1920,
+      "ext": "webm",
+      "vcodec": "vp9",
+      "acodec": "opus",
+      "tbr": 2504,
+      "abr": null,
+      "filesize_approx": 4097483
+    },
+    {
+      "format_id": "source",
+      "width": 1080,
+      "height": 1920,
+      "ext": "webm",
+      "tbr": null,
+      "abr": null,
+      "filesize": 4097963
+    }
+  ]
+}

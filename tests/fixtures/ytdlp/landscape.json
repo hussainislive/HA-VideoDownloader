@@ -1,0 +1,65 @@
+{
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Portraits-HD.webm",
+  "capturedWith": "yt-dlp 2026.08.19",
+  "id": "46652730",
+  "title": "Portraits-HD",
+  "uploader": "Yann",
+  "duration": 80.013,
+  "webpage_url": "https://commons.wikimedia.org/wiki/File:Portraits-HD.webm",
+  "extractor_key": "Wikimedia",
+  "formats": [
+    {
+      "format_id": "0",
+      "width": 426,
+      "height": 240,
+      "ext": "webm",
+      "vcodec": "vp9",
+      "acodec": "opus",
+      "tbr": 49,
+      "abr": null,
+      "filesize_approx": 490079
+    },
+    {
+      "format_id": "1",
+      "width": 640,
+      "height": 360,
+      "ext": "mov",
+      "vcodec": "mp4v",
+      "acodec": "none",
+      "tbr": 240,
+      "abr": 0,
+      "filesize_approx": 2400390
+    },
+    {
+      "format_id": "2",
+      "width": 854,
+      "height": 480,
+      "ext": "webm",
+      "vcodec": "vp9",
+      "acodec": "opus",
+      "tbr": 157,
+      "abr": null,
+      "filesize_approx": 1570255
+    },
+    {
+      "format_id": "3",
+      "width": 1280,
+      "height": 720,
+      "ext": "webm",
+      "vcodec": "vp9",
+      "acodec": "none",
+      "tbr": 795,
+      "abr": 0,
+      "filesize_approx": 7951291
+    },
+    {
+      "format_id": "source",
+      "width": 1280,
+      "height": 720,
+      "ext": "webm",
+      "tbr": null,
+      "abr": null,
+      "filesize": 7957602
+    }
+  ]
+}

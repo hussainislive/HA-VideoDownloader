@@ -1,3 +1,19 @@
-   binaries/macos*/
-   binaries/win/
-   node_modules/
+node_modules/
+out/
+dist/
+release/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+
+binaries/macos/*
+binaries/macos-arm64/*
+binaries/macos-x64/*
+binaries/win/*
+!binaries/README.md
