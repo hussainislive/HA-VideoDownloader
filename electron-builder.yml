@@ -1,0 +1,53 @@
+appId: com.hussainislive.havideodownloader
+productName: HA Premium Video Downloader
+copyright: Copyright © 2026 Hussain Ahmed
+directories:
+  output: release
+  buildResources: resources
+files:
+  - out/**
+  - package.json
+  - THIRD_PARTY_NOTICES.md
+  - '!**/*.map'
+asar: true
+extraResources:
+  - from: binaries/macos
+    to: binaries/macos
+    filter:
+      - yt-dlp
+      - ffmpeg
+afterPack: scripts/after-pack.mjs
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+  category: public.app-category.video
+  hardenedRuntime: false
+  identity: null
+  icon: resources/icon.png
+  artifactName: HA-Premium-Video-Downloader-${version}-mac-${arch}.${ext}
+dmg:
+  title: HA Premium Video Downloader
+  contents:
+    - x: 140
+      y: 180
+    - x: 420
+      y: 180
+      type: link
+      path: /Applications
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.png
+  artifactName: HA-Premium-Video-Downloader-${version}-win-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: HA Premium Video Downloader
+npmRebuild: false
