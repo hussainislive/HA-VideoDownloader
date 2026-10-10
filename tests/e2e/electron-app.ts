@@ -10,8 +10,13 @@ export interface LaunchedApp {
   userData: string
 }
 
-export async function launchElectronApp(): Promise<LaunchedApp> {
-  const userData = await mkdtemp(join(tmpdir(), 'ha-downloader-e2e-'))
+export interface LaunchOptions {
+  env?: NodeJS.ProcessEnv
+  userData?: string
+}
+
+export async function launchElectronApp(options: LaunchOptions = {}): Promise<LaunchedApp> {
+  const userData = options.userData ?? (await mkdtemp(join(tmpdir(), 'ha-downloader-e2e-')))
   const environment = { ...process.env }
   delete environment.ELECTRON_RUN_AS_NODE
   const app = await electron.launch({
@@ -20,6 +25,7 @@ export async function launchElectronApp(): Promise<LaunchedApp> {
       ...environment,
       ELECTRON_DISABLE_SECURITY_WARNINGS: 'true',
       NODE_ENV: 'test',
+      ...options.env,
     },
   })
   try {

@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the Phase 1 application boundary. Download-engine and persistence flows will be added when Phase 2 implements them; no renderer mock stands in for those services today.
+This document describes the Phase 2 application boundary. The download engine, queue, persistence, and operating-system services are real and fully available through validated IPC; Phase 3 will add their user-facing controls.
 
 ## Process model
 
@@ -13,7 +13,9 @@ flowchart LR
   API --> Renderer[React renderer]
   Main --> Logs[Local rotating logs]
   Main --> State[Validated window-state JSON]
-  Main -. Phase 2 .-> Engine[yt-dlp / FFmpeg]
+  Main --> Manager[Download manager]
+  Manager --> Engine[yt-dlp / FFmpeg]
+  Manager --> Stores[Atomic JSON stores]
 ```
 
 The main process owns operating-system capabilities, application state, navigation policy, external links, and window lifecycle. The renderer has no Node.js access. Its only privileged surface is the typed API exposed by the context-isolated preload.
@@ -35,7 +37,10 @@ The main process owns operating-system capabilities, application state, navigati
 src/main/index.ts                 application lifecycle and single-instance lock
 src/main/window/                  BrowserWindow creation, fade, and persisted bounds
 src/main/security/                CSP, navigation guards, external URL policy
-src/main/ipc/                     validated system and window handlers
+src/main/ipc/                     validated system, engine, queue, and service handlers
+src/main/engine/                  binary install/update, ProcessRunner, yt-dlp adapters
+src/main/downloads/               pure state machine and concurrent manager
+src/main/services/                JSON stores, disk, files, clipboard, notifications
 src/main/menu.ts                  native application menus
 src/main/logger.ts                redacted local logging
 
@@ -79,6 +84,20 @@ sequenceDiagram
 
 The sandboxed preload is intentionally emitted as CommonJS (`index.cjs`). Electron executes sandboxed preloads with its restricted CommonJS environment; emitting ESM would leave the bridge unavailable.
 
+## Engine ownership
+
+The main process is the sole owner of yt-dlp, FFmpeg, settings, queue state,
+history, filesystem access, notifications, and badges. On first launch it copies
+yt-dlp to `userData/engine`, makes it executable, and removes macOS quarantine
+best-effort. FFmpeg stays in app resources. Only the writable yt-dlp copy can
+self-update; a broken update is replaced by the bundled copy.
+
+`ProcessRunner` always uses argument arrays, `shell: false`, and
+`windowsHide: true`. macOS processes start in a dedicated process group so
+SIGTERM/SIGKILL reaches FFmpeg descendants. Windows uses hidden
+`taskkill /pid … /T /F`. URLs are placed after `--`, and logs redact query
+strings.
+
 ## IPC contract
 
 | Channel                   | Direction       | Input         | Result                              |
@@ -91,11 +110,82 @@ The sandboxed preload is intentionally emitted as CommonJS (`index.cjs`). Electr
 | `window:close`            | renderer → main | `undefined`   | success before close                |
 | `window:maximize-changed` | main → renderer | boolean event | unsubscribe function in preload API |
 
+Phase 2 adds domain methods under `window.api.engine`, `media`, `downloads`,
+`library`, `settings`, `dialog`, `shell`, and `clipboard`. Every request has a
+zod schema and every response is `Result<T, AppError>`. The only pushed events
+are engine status, batched download snapshots, library changes, settings
+changes, and maximize state. `window.__ha` is exposed only by development
+preloads and delegates to the same validated API.
+
+## Probe sequence
+
+```mermaid
+sequenceDiagram
+  participant UI as Renderer / dev console
+  participant IPC as Validated IPC
+  participant Probe as MediaProbeService
+  participant Engine as writable yt-dlp
+  UI->>IPC: media.probe(url)
+  IPC->>IPC: zod + URL validation
+  IPC->>Probe: normalized URL
+  Probe->>Probe: session cache lookup
+  Probe->>Engine: -J --no-playlist --skip-download -- URL
+  Engine-->>Probe: metadata JSON
+  Probe->>Probe: lenient zod parse + live rejection
+  Probe-->>UI: Result<MediaInfo>
+```
+
+## Download and progress sequence
+
+```mermaid
+sequenceDiagram
+  participant UI as Renderer / dev console
+  participant Manager as DownloadManager
+  participant Store as queue.json
+  participant Engine as yt-dlp + FFmpeg
+  UI->>Manager: enqueue(validated job)
+  Manager->>Store: debounce atomic snapshot
+  Manager->>Engine: spawn argv, URL after --
+  Engine-->>Manager: HA progress lines / HAFILE path
+  Manager->>Manager: aggregate + transition state
+  Manager-->>UI: snapshot at most 5 Hz
+  Engine-->>Manager: exit
+  Manager->>Store: persist terminal state
+  Manager->>Store: append history on success
+```
+
+## Pause and recovery sequence
+
+```mermaid
+sequenceDiagram
+  participant UI as Renderer / dev console
+  participant Manager as DownloadManager
+  participant Process as Process group
+  participant Store as queue.json
+  UI->>Manager: pause(jobId)
+  Manager->>Process: SIGTERM group / taskkill tree
+  Process-->>Manager: exited; .part retained
+  Manager->>Store: state = paused
+  Note over Manager,Store: On relaunch, active jobs recover as paused and all recoverable jobs are held
+  UI->>Manager: resume(jobId)
+  Manager->>Process: spawn same template with --continue
+```
+
+## Persistence and recovery
+
+`settings.json`, `queue.json`, and `history.json` are schema-versioned and
+zod-validated. Writes use a temporary file, file `fsync`, rename, and directory
+`fsync`. Invalid JSON is renamed with a `.corrupt-<timestamp>` suffix and safe
+defaults are recreated. Queue writes debounce at 500 ms and settings at 300 ms.
+An interrupted active job becomes paused at launch; queued and paused recovery
+jobs do not start until explicitly resumed. History is newest-first and capped
+at 5,000 entries.
+
 ## Renderer state and rendering
 
 The shell owns only active-tab, visited-tab, and dev UI-kit state. Screens load through `React.lazy`; once visited they remain mounted and are hidden when inactive so future scroll and form state can survive tab changes. Shared copy and semantic styling keep later features consistent.
 
-Zustand is installed for Phase 2 feature slices but is not used to inflate Phase 1's local state. The Engine status pill truthfully reports setup pending until the real service exists.
+Zustand remains reserved for the Phase 3 renderer mirrors. Phase 2 intentionally leaves the visual status pill unchanged while the real status is available through IPC.
 
 ## Window state
 

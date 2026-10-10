@@ -1,0 +1,42 @@
+{
+  "sourceUrl": "https://commons.wikimedia.org/wiki/File:Example_sound_file_in_Ogg_Vorbis_format.ogg",
+  "capturedWith": "yt-dlp 2026.08.19",
+  "id": "76730271",
+  "title": "Example sound file in Ogg Vorbis format",
+  "uploader": "K6ka",
+  "duration": 3.7035827664399092,
+  "webpage_url": "https://commons.wikimedia.org/wiki/File:Example_sound_file_in_Ogg_Vorbis_format.ogg",
+  "extractor_key": "Wikimedia",
+  "formats": [
+    {
+      "format_id": "0",
+      "width": 0,
+      "height": 0,
+      "ext": "ogg",
+      "vcodec": "none",
+      "acodec": "vorbis",
+      "tbr": 331,
+      "abr": 331,
+      "filesize_approx": 153235
+    },
+    {
+      "format_id": "1",
+      "width": 0,
+      "height": 0,
+      "ext": "mp3",
+      "acodec": "mp3",
+      "tbr": 136,
+      "abr": null,
+      "filesize_approx": 62960
+    },
+    {
+      "format_id": "source",
+      "width": 0,
+      "height": 0,
+      "ext": "ogg",
+      "tbr": null,
+      "abr": null,
+      "filesize": 153301
+    }
+  ]
+}

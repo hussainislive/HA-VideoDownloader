@@ -7,14 +7,14 @@
 <p align="center">A private desktop home for reliable video and audio downloads.</p>
 
 <p align="center">
-  <img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-0fd920" />
+  <img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-0fd920" />
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0fd920" />
   <img alt="macOS and Windows" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-0d120e" />
   <img alt="Work in progress" src="https://img.shields.io/badge/status-work%20in%20progress-ffbd2e" />
 </p>
 
 > [!IMPORTANT]
-> This repository is at Phase 1. The secure desktop shell and design system are working; downloads are not wired up yet.
+> This repository is at Phase 2. The secure shell and headless download engine are working; the end-user Downloader and Queue screens arrive in Phase 3.
 
 ![The Phase 1 Downloader shell](docs/images/downloader-shell.png)
 
@@ -28,9 +28,11 @@ HA Premium Video Downloader is being built as a free, focused alternative to ad-
 - ✅ Responsive native-feeling macOS and Windows chrome
 - ✅ Local fonts, semantic design tokens, and accessible UI primitives
 - ✅ Keyboard tab navigation and reduced-motion support
-- 🚧 URL inspection and format selection
-- 🚧 Download queue with pause, resume, retry, and cancellation
-- 🚧 Local history, settings, engine management, and About screen
+- ✅ Real yt-dlp probing, format selection, size estimation, and friendly errors
+- ✅ Persistent concurrent queue with pause, resume, retry, scoped cancellation, and recovery
+- ✅ Atomic settings/history/queue stores and on-demand engine updates
+- ✅ Typed, zod-validated IPC plus deterministic and live real-binary coverage
+- 🚧 Downloader, Queue, Library, Settings, and About screen interactions
 - 🚧 Signed release artifacts (unsigned development packages only today)
 
 ## Screenshots
@@ -51,7 +53,7 @@ Future unsigned Windows builds may trigger SmartScreen; choose **More info**, th
 
 ## Quick start
 
-The download flow arrives in Phase 3. Its intended path is simple: paste a link, inspect it, choose video or audio quality, select a folder, and start the download.
+The visual download flow arrives in Phase 3. During Phase 2 development, the complete backend is available from the developer console through `window.api`; `window.__ha` adds probe and snapshot shortcuts only in development builds.
 
 | Shortcut               | Action                                              |
 | ---------------------- | --------------------------------------------------- |
@@ -120,12 +122,12 @@ npm run check        # complete required quality gate
 npm run test:e2e:live # opt-in real-engine tests; introduced in Phase 2
 ```
 
-Electron E2E covers launch, keyboard and pointer navigation, native window actions, responsive sizes, axe checks on every screen, and a visual baseline. More detail is in [`docs/TESTING.md`](docs/TESTING.md).
+Electron E2E also drives real IPC probing, deterministic downloads, persistence, recovery, and resume. Opt-in macOS live tests use the bundled tools against documented Creative Commons fixtures. More detail is in [`docs/TESTING.md`](docs/TESTING.md).
 
 ## Roadmap and project status
 
 - **Phase 1 — complete:** foundation, secure shell, design system, tooling, tests, and packaging
-- **Phase 2:** engine, queue state machine, persistence, and IPC
+- **Phase 2 — complete:** engine, queue state machine, persistence, IPC, fake engine, and live binary tests
 - **Phase 3:** Downloader and Queue screens
 - **Phase 4:** Library, Settings, and About screens
 - **Phase 5:** performance, recovery, cross-platform QA, signing hooks, and release polish
@@ -136,7 +138,7 @@ Later ideas such as playlists, subtitles, browser cookies, telemetry, and automa
 
 **Why does the current macOS build use x64?** The supplied yt-dlp is universal, but the supplied FFmpeg is x86_64-only. A native arm64 package would falsely advertise native support, so packaging remains x64 until a verified arm64 FFmpeg is supplied.
 
-**Why does the app say “Engine setup pending”?** Phase 2 will install and verify a writable yt-dlp copy in the app data folder. Phase 1 never shows a fake ready state.
+**Why does the app still say “Engine setup pending”?** Phase 2 intentionally performs no screen work. The real status is available through `window.api.engine.getStatus()`; Phase 4 connects it to the Settings and title-bar UI.
 
 **Why is the app unsigned?** Signing and notarization require owner credentials and certificates. The current package is a development artifact.
 

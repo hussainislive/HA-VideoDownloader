@@ -24,7 +24,7 @@ This is the definition-of-done gate. It runs strict TypeScript checks, ESLint wi
 | `npm run test:e2e:live`   | Run opt-in tests tagged `@live`                                              |
 | `npm run verify:binaries` | Check presence, versions, architecture, permissions, and macOS signing state |
 
-## Phase 1 coverage
+## Unit and integration coverage
 
 Unit tests cover:
 
@@ -36,6 +36,14 @@ Unit tests cover:
 - startup window-fade cleanup, including the rapid-close regression.
 
 Component tests cover Button state, Switch behavior, Select keyboard selection, and SegmentedControl roles and interaction.
+
+Phase 2 unit and integration tests additionally cover:
+
+- streaming UTF-8/CRLF splitting, huge output, exit codes, and process-tree killing including a grandchild;
+- lenient probes, quality tiers, vertical shorter-side mapping, size estimates, exact argument arrays, progress aggregation, phases, and captured error mapping;
+- legal/illegal job transitions, restart recovery, atomic stores, migrations, corruption quarantine, safe filenames, and scoped partial cleanup;
+- successful engine updates, invalid-update rollback, failed-update repair, and raw-stderr isolation;
+- fake-engine success, pause/resume, idempotent cancel, manual retry accounting, crash, one stall retry, disk full, MP4→MKV fallback, and 50 queued jobs with a measured concurrency ceiling of two.
 
 Electron E2E covers:
 
@@ -55,11 +63,48 @@ The visual assertion waits for the BrowserWindow fade, the lazy screen, and loca
 
 Each Electron test receives a temporary `userData` directory and removes it after shutdown. The launcher strips the ambient `ELECTRON_RUN_AS_NODE` variable before starting Electron. Failed startup waits close the app and delete their temporary profile, preventing orphan windows.
 
-No Phase 1 UI contains fake job, history, engine, storage, or throughput data. The Phase 2 fake engine selected through `HA_TEST_ENGINE_SCRIPT` will make download flows deterministic without reaching the network.
+No UI contains fake job, history, engine, storage, or throughput data. The Phase 2 fake engine selected through `HA_TEST_ENGINE_SCRIPT` makes automated download flows deterministic without reaching the network.
+
+The fake engine lives at `tests/fixtures/fake-engine/index.mjs`. Its magic URL
+paths include `/ok`, `/slow`, `/crash`, `/stall`, `/merge-fail`,
+`/disk-full`, `/fail-403`, `/private`, `/geo`, `/audio`, and `/vertical`.
+It emits real `HA|…` progress lines and `HAFILE|…`, writes real output/partial
+files, and handles SIGTERM. `HA_TEST_ENGINE_SCRIPT`, `HA_YTDLP_PATH`, and
+`HA_FFMPEG_PATH` are honored only by unpackaged builds.
 
 ## Live tests
 
-There are no `@live` cases in Phase 1, so the live gate is not applicable. Phase 2 will add opt-in probes against documented, freely licensed URLs. Live tests must never run as part of `npm run check`.
+Live tests never run as part of `npm run check`. On macOS, run
+`npm run test:e2e:live`; it uses the owner-supplied binaries and therefore
+requires network access and permission to execute native tools.
+
+Phase 2 fixtures and live tests use these public, freely licensed sources:
+
+- landscape metadata: `https://commons.wikimedia.org/wiki/File:Portraits-HD.webm` (CC BY-SA 3.0);
+- vertical metadata: `https://commons.wikimedia.org/wiki/File:WP25Post1.webm` (CC BY-SA 4.0);
+- audio-only metadata/MP3: `https://commons.wikimedia.org/wiki/File:Example_sound_file_in_Ogg_Vorbis_format.ogg` (CC0);
+- 480p video+audio and resume: `https://commons.wikimedia.org/wiki/File:Test-webM.webm` (CC BY-SA 4.0).
+
+The captured JSON keeps only stable media/format fields; cookies, request
+headers, direct media URLs, and diagnostics URLs are removed. Failure fixtures
+cover an unavailable YouTube test ID, `https://example.com/` as unsupported,
+and a Wikimedia probe forced through an unreachable loopback proxy. Refresh
+them deliberately with `node_modules/.bin/tsx scripts/capture-ytdlp-fixtures.ts`.
+
+The live suite probes the vertical clip, downloads the 480p video, verifies
+both video and audio streams plus duration within one second using `ffmpeg -i`,
+extracts MP3, interrupts a rate-limited real download, checks `ps` after the
+tree kill, resumes the `.part`, and compares its final byte size with the clean
+download.
+
+## Verified yt-dlp flags
+
+Phase 2 checked the bundled yt-dlp 2026.08.19 help and exercised the complete
+argument set. All specified flags are accepted. Current help documents color
+control as `--color no_color`; the specification's hidden `--no-colors` alias
+was separately executed with `--version` and remains accepted. `--print
+after_move:HAFILE|%(filepath)s` with `--no-simulate` emitted the final path in
+both deterministic and live downloads.
 
 ## Packaging smoke
 

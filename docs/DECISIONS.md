@@ -8,8 +8,9 @@ The download engine will use a small typed `ProcessRunner` around Node's
 `child_process.spawn`. This keeps argument arrays, `shell: false`,
 `windowsHide: true`, streaming output, timeouts, and process-tree termination
 under direct control without bringing an ESM-only process layer into the main
-bundle. The wrapper and its process-tree behavior will be implemented and
-tested in Phase 2.
+bundle. Phase 2 completed the wrapper with process-group killing on macOS,
+`taskkill /T /F` on Windows, and regression coverage that observes a
+grandchild process exiting.
 
 ## ADR-002 — Keep the Electron window opaque
 
@@ -102,3 +103,31 @@ CommonJS loader; an ESM preload was rejected before `contextBridge` ran and
 left the renderer without `window.api`. Keeping only this boundary in CommonJS
 preserves the sandbox and a narrow preload API without changing the rest of
 the module system.
+
+## ADR-011 — Classify video quality by the shorter frame side
+
+**Status:** Accepted · **Date:** 2026-10-10
+
+A format reaches a quality tier when its shorter pixel dimension is at least
+95% of that tier. The shorter-side rule maps 1080×1920 portrait video to 1080p
+without misclassifying it as 1920p, while the tolerance admits real-world
+1030-line encodes into the 1080p tier. Explicit probed format IDs are preferred
+over height-only selectors; generic selectors remain the compatibility fallback.
+
+## ADR-012 — Install yt-dlp into writable application data
+
+**Status:** Accepted · **Date:** 2026-10-10
+
+Every normal probe, download, and update uses a verified copy under
+`userData/engine`. FFmpeg remains in read-only resources. This lets the user
+request `yt-dlp -U` without mutating a signed app bundle; a failed update
+restores the bundled original and verifies it again.
+
+## ADR-013 — Batch renderer progress at five updates per second
+
+**Status:** Accepted · **Date:** 2026-10-10
+
+The main process records every engine progress sample but coalesces renderer
+snapshots on a 200 ms timer. State transitions still publish immediately.
+This keeps persistence and the future renderer responsive without losing final
+states, and gives all jobs one consistent snapshot boundary.
