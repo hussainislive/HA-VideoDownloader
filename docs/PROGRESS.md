@@ -6,7 +6,7 @@
 | ---------------------------------------------------- | -------------- |
 | 1 — Foundation, tooling, design system, window shell | ✅ Complete    |
 | 2 — Engine, queue, persistence                       | ✅ Complete    |
-| 3 — Downloader and Queue UI                          | ⬜ Not started |
+| 3 — Downloader and Queue UI                          | 🟨 In progress |
 | 4 — Library, Settings, About                         | ⬜ Not started |
 | 5 — Hardening and release                            | ⬜ Not started |
 
@@ -30,6 +30,7 @@
 - 2026-10-10: Implemented Phase 2 binary management, ProcessRunner, yt-dlp adapters, persistent queue/history/settings, updater, complete IPC, deterministic fake engine, and dev console harness on `phase-2-engine`.
 - 2026-10-10: Captured sanitized real yt-dlp fixtures and passed four macOS live tests: vertical probe, 480p video+audio with duration verification, MP3 extraction, and process-tree kill plus byte-identical resume.
 - 2026-10-10: Completed Phase 2 with 72 green unit/integration tests, eight green Electron E2E tests, a green `npm run check`, and a clean development launch smoke after removing the host-only `ELECTRON_RUN_AS_NODE` variable.
+- 2026-10-10: Started Phase 3 on `phase-3-downloader-queue`; baseline strict typechecking is green and the Downloader/Queue references are under audit.
 
 ## Phase 2 plan
 
@@ -43,6 +44,18 @@
 - [x] Pass deterministic integration, relaunch recovery, and real bundled-binary live tests.
 - [x] Complete the final `npm run check` and development smoke.
 - [x] Create the local Conventional Commit and `v0.2.0` tag after the final repository audit.
+
+## Phase 3 plan
+
+- [ ] Render and audit the Downloader and Queue design references at 850×600.
+- [ ] Build renderer stores and lifecycle-safe IPC hooks with per-job subscriptions.
+- [ ] Implement the functional Downloader flow, real option availability, folder selection, and user feedback.
+- [ ] Implement every Queue job state, controls, recovery prompt, ordering, and live badge.
+- [ ] Add focused component tests and deterministic Electron golden-path, failure, audio, pause/resume/cancel, accessibility, responsive, and visual tests.
+- [ ] Complete the fidelity and render-performance passes at required viewport sizes.
+- [ ] Refresh screenshots and Phase 3 documentation.
+- [ ] Pass `npm run check`, one live end-to-end smoke, and the development golden-path smoke.
+- [ ] Create the local Conventional Commit and `v0.3.0` tag after the final repository audit.
 
 ## Known issues
 
