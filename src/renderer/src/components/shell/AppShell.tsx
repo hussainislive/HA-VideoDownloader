@@ -1,4 +1,8 @@
+import { useAppSync } from '@renderer/hooks/use-app-sync'
+import { useDownloadNotifications } from '@renderer/hooks/use-download-notifications'
 import { COPY } from '@renderer/lib/copy'
+import { selectQueueCount, useDownloadStore } from '@renderer/store/download-store'
+import { useUiStore } from '@renderer/store/ui-store'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 
 import { ErrorBoundary } from './ErrorBoundary'
@@ -18,15 +22,21 @@ const SCREENS = {
 const UiKitScreen = lazy(() => import('@renderer/features/ui-kit/UiKitScreen'))
 
 export function AppShell(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<TabId>('downloader')
-  const [visited, setVisited] = useState<ReadonlySet<TabId>>(() => new Set(['downloader']))
+  useAppSync()
+  useDownloadNotifications()
+  const activeTab = useUiStore((state) => state.activeTab)
+  const setActiveTab = useUiStore((state) => state.setActiveTab)
+  const visited = useUiStore((state) => state.visitedTabs)
+  const queueCount = useDownloadStore(selectQueueCount)
   const [showUiKit, setShowUiKit] = useState(false)
 
-  const changeTab = useCallback((tab: TabId): void => {
-    setActiveTab(tab)
-    setVisited((current) => new Set([...current, tab]))
-    setShowUiKit(false)
-  }, [])
+  const changeTab = useCallback(
+    (tab: TabId): void => {
+      setActiveTab(tab)
+      setShowUiKit(false)
+    },
+    [setActiveTab],
+  )
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent): void => {
@@ -64,7 +74,7 @@ export function AppShell(): React.JSX.Element {
       data-testid="app-shell"
     >
       <TitleBar />
-      <TabBar activeTab={activeTab} onChange={changeTab} />
+      <TabBar activeTab={activeTab} onChange={changeTab} queueCount={queueCount} />
       <main className="@container min-h-0 flex-1 overflow-y-auto p-5">
         {showUiKit ? (
           <Suspense fallback={<ScreenSkeleton />}>

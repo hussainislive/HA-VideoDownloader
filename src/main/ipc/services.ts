@@ -5,6 +5,7 @@ import {
   LibrarySearchInputSchema,
   PathInputSchema,
   SettingsUpdateInputSchema,
+  TextInputSchema,
 } from '@shared/ipc/schemas'
 import { ok } from '@shared/types/result'
 import type { BrowserWindow, OpenDialogOptions } from 'electron'
@@ -12,7 +13,7 @@ import { clipboard, dialog, ipcMain } from 'electron'
 
 import type { AppServices } from '../services/app-services'
 import { firstHttpUrl } from '../services/clipboard'
-import { assertWritableDirectory } from '../services/disk'
+import { assertWritableDirectory, getFreeBytes } from '../services/disk'
 import { openFile, showInFolder } from '../services/file-actions'
 import { invalidRequest, ipcFailure, safeSend } from './helpers'
 
@@ -91,6 +92,21 @@ export function registerServiceIpc(services: AppServices, getWindow: WindowGette
   ipcMain.handle(IPC_CHANNELS.clipboard.readUrl, async (_event, input) => {
     if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
     return ok(firstHttpUrl(await clipboard.readText()))
+  })
+  ipcMain.handle(IPC_CHANNELS.clipboard.writeText, async (_event, input) => {
+    const parsed = TextInputSchema.safeParse(input)
+    if (!parsed.success) return invalidRequest()
+    clipboard.writeText(parsed.data.text)
+    return ok(undefined)
+  })
+  ipcMain.handle(IPC_CHANNELS.disk.getFreeBytes, async (_event, input) => {
+    const parsed = PathInputSchema.safeParse(input)
+    if (!parsed.success) return invalidRequest()
+    try {
+      return ok(await getFreeBytes(parsed.data.path))
+    } catch (error) {
+      return ipcFailure(error)
+    }
   })
   const pathAction = (channel: string, action: (path: string) => Promise<void>): void => {
     ipcMain.handle(channel, async (_event, input) => {

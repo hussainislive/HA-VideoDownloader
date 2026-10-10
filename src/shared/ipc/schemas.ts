@@ -48,6 +48,7 @@ export const LibrarySearchInputSchema = z.object({
   kind: z.enum(['video', 'audio']).optional(),
 })
 export const PathInputSchema = z.object({ path: z.string().min(1).max(4_096) })
+export const TextInputSchema = z.object({ text: z.string().max(4_096) })
 export const SettingsUpdateInputSchema = z
   .object({
     downloadDir: z.string().min(1).max(4_096).optional(),

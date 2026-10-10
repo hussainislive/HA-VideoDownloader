@@ -48,6 +48,16 @@ export function registerEngineIpc(services: AppServices, getWindow: WindowGetter
       return ipcFailure(error)
     }
   })
+  ipcMain.handle(IPC_CHANNELS.media.cancelProbe, async (_event, input) => {
+    if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
+    try {
+      await services.ready
+      await services.probe?.cancel()
+      return ok(undefined)
+    } catch (error) {
+      return ipcFailure(error)
+    }
+  })
   ipcMain.handle(IPC_CHANNELS.downloads.list, async (_event, input) => {
     if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
     try {

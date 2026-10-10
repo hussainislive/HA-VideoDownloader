@@ -34,6 +34,7 @@ export interface DownloadJob {
   state: DownloadState
   progress: DownloadProgress
   filePath?: string | undefined
+  fileSizeBytes?: number | undefined
   error?: AppError | undefined
   createdAt: string
   startedAt?: string | undefined

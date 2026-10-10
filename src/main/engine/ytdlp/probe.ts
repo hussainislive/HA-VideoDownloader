@@ -5,7 +5,7 @@ import { normalizeMediaUrl } from '@shared/utils/url'
 import { z } from 'zod'
 
 import { type BinaryService } from '../binaries'
-import { ProcessRunner } from '../process-runner'
+import { type ProcessHandle, ProcessRunner } from '../process-runner'
 import { mapEngineError } from './errors'
 
 const FormatSchema = z.looseObject({
@@ -119,11 +119,18 @@ export function parseProbeJson(json: string, requestedUrl: string): Result<Media
 
 export class MediaProbeService {
   readonly #cache = new Map<string, MediaInfo>()
+  #active: { canceled: boolean; handle: ProcessHandle } | undefined
 
   constructor(
     private readonly binaries: BinaryService,
     private readonly runner = new ProcessRunner(),
   ) {}
+
+  async cancel(): Promise<void> {
+    if (!this.#active) return
+    this.#active.canceled = true
+    await this.#active.handle.kill()
+  }
 
   async probe(inputUrl: string): Promise<Result<MediaInfo>> {
     const url = normalizeMediaUrl(inputUrl)
@@ -133,6 +140,7 @@ export class MediaProbeService {
         message: 'Enter a valid http or https URL.',
         retryable: false,
       })
+    await this.cancel()
     const cached = this.#cache.get(url)
     if (cached) return ok(cached)
     const invocation = this.binaries.ytdlpInvocation([
@@ -144,15 +152,30 @@ export class MediaProbeService {
       url,
     ])
     try {
-      const result = await this.runner.run(invocation.file, invocation.args, {
-        timeoutMs: 30_000,
+      const handle = this.runner.start(invocation.file, invocation.args, {
+        timeoutMs: 60_000,
         ...(invocation.env ? { env: invocation.env } : {}),
       })
-      if (result.code !== 0) return err(mapEngineError(result.stderr))
-      const parsed = parseProbeJson(result.stdout, url)
+      const active = { canceled: false, handle }
+      this.#active = active
+      const stdout: string[] = []
+      const stderr: string[] = []
+      const offStdout = handle.onStdoutLine((line) => stdout.push(line))
+      const offStderr = handle.onStderrLine((line) => {
+        if (stderr.length < 2_000) stderr.push(line)
+      })
+      const result = await handle.result
+      offStdout()
+      offStderr()
+      if (this.#active === active) this.#active = undefined
+      if (active.canceled)
+        return err({ code: 'CANCELED', message: 'Link inspection was canceled.', retryable: true })
+      if (result.code !== 0) return err(mapEngineError(stderr.join('\n')))
+      const parsed = parseProbeJson(stdout.join('\n'), url)
       if (parsed.ok) this.#cache.set(url, parsed.value)
       return parsed
     } catch (error) {
+      this.#active = undefined
       return err(mapEngineError(error instanceof Error ? error.message : '', 'ENGINE_NOT_FOUND'))
     }
   }

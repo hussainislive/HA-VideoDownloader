@@ -1,5 +1,7 @@
 /// <reference lib="dom" />
 
+import { join } from 'node:path'
+
 import AxeBuilder from '@axe-core/playwright'
 import { type ConsoleMessage, expect, test } from '@playwright/test'
 
@@ -13,6 +15,7 @@ declare global {
 }
 
 const TABS = ['Downloader', 'Queue', 'Library', 'Settings', 'About'] as const
+const fakeEngine = join(process.cwd(), 'tests/fixtures/fake-engine/index.mjs')
 let launched: LaunchedApp | null = null
 
 function current(): LaunchedApp {
@@ -21,7 +24,10 @@ function current(): LaunchedApp {
 }
 
 test.beforeEach(async () => {
-  launched = await launchElectronApp()
+  launched = await launchElectronApp({
+    env: { HA_TEST_ENGINE_SCRIPT: fakeEngine },
+    settings: { autoPasteClipboard: false },
+  })
 })
 
 test.afterEach(async () => {
@@ -38,7 +44,7 @@ test('launches a secure shell and switches every tab', async () => {
   page.on('console', captureError)
 
   await expect(page).toHaveTitle('HA Premium Video Downloader')
-  await expect(page.getByText('Downloader workspace')).toBeVisible()
+  await expect(page.getByTestId('downloader-screen')).toBeVisible()
   await expect
     .poll(() => page.evaluate(() => document.documentElement.dataset.platform))
     .toBe(process.platform)
@@ -122,8 +128,10 @@ test('handles minimize, maximize, restore, and close through narrow IPC', async 
 
 test('has no serious or critical accessibility violations on any screen', async () => {
   const { page } = current()
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   for (const tab of TABS) {
     await page.getByRole('tab', { name: tab }).click()
+    await page.waitForTimeout(150)
     const results = await new AxeBuilder({ page }).setLegacyMode().analyze()
     const severe = results.violations.filter(
       (violation) => violation.impact === 'serious' || violation.impact === 'critical',
@@ -139,7 +147,7 @@ test('matches the 850 by 600 shell baseline', async () => {
   await expect
     .poll(() => browserWindowHandle.evaluate((browserWindow) => browserWindow.getOpacity()))
     .toBe(1)
-  await expect(page.getByText('Downloader workspace')).toBeVisible()
+  await expect(page.getByTestId('downloader-screen')).toBeVisible()
   await page.evaluate(async () => {
     await document.fonts.ready
   })

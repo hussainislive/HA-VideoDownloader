@@ -8,8 +8,12 @@ import type { Settings, SettingsUpdate } from '../types/settings'
 export type AppPlatform = 'darwin' | 'win32'
 
 export interface HaApi {
-  clipboard: { readUrl: () => Promise<Result<string | undefined>> }
+  clipboard: {
+    readUrl: () => Promise<Result<string | undefined>>
+    writeText: (text: string) => Promise<Result<undefined>>
+  }
   dialog: { chooseFolder: () => Promise<Result<string | undefined>> }
+  disk: { getFreeBytes: (path: string) => Promise<Result<number>> }
   downloads: {
     cancel: (id: string) => Promise<Result<DownloadJob>>
     clearCompleted: () => Promise<Result<DownloadSnapshot>>
@@ -32,7 +36,10 @@ export interface HaApi {
     search: (input: LibrarySearchInput) => Promise<Result<HistoryItem[]>>
     onUpdated: (listener: (items: HistoryItem[]) => void) => () => void
   }
-  media: { probe: (url: string) => Promise<Result<MediaInfo>> }
+  media: {
+    cancelProbe: () => Promise<Result<undefined>>
+    probe: (url: string) => Promise<Result<MediaInfo>>
+  }
   settings: {
     get: () => Promise<Result<Settings>>
     update: (update: SettingsUpdate) => Promise<Result<Settings>>

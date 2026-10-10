@@ -79,6 +79,11 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.download-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 82px;
+}
+
 button,
 input,
 [role='button'] {

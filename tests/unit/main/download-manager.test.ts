@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, rm } from 'node:fs/promises'
+import { mkdtemp, readdir, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -82,7 +82,17 @@ describe('DownloadManager with the deterministic engine', () => {
     manager.enqueue(input(directory))
     const job = await waitFor(manager, ({ state }) => state === 'completed')
     expect(job.filePath).toBeTruthy()
+    expect(job.fileSizeBytes).toBe((await stat(job.filePath ?? '')).size)
     expect(await readdir(directory)).toContain('Fake Video [fake-id].mp4')
+  })
+
+  it('drops completed queue cards after restart while history remains authoritative', async () => {
+    const manager = await createManager(directory)
+    manager.enqueue(input(directory))
+    await waitFor(manager, ({ state }) => state === 'completed')
+    await manager.shutdown()
+    const relaunched = await createManager(directory)
+    expect(relaunched.snapshot().jobs).toEqual([])
   })
 
   it('treats an existing complete file as completed', async () => {
@@ -97,6 +107,7 @@ describe('DownloadManager with the deterministic engine', () => {
     const queued = manager.enqueue(input(directory, 'slow'))
     await waitFor(manager, (job) => job.state === 'downloading' && (job.progress.percent ?? 0) > 0)
     expect((await manager.pause(queued.id)).state).toBe('paused')
+    expect(manager.snapshot().aggregateSpeedBps).toBe(0)
     expect((await readdir(directory)).some((name) => name.endsWith('.part'))).toBe(true)
     manager.resume(queued.id)
     await waitFor(manager, ({ state }) => state === 'completed')
