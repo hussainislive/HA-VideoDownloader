@@ -77,7 +77,8 @@ test.describe('Phase 2 headless engine', () => {
       await new Promise((resolve) => setTimeout(resolve, 650))
       return queued.value.id
     }, outputDir)
-    await launched.app.close()
+    await closeElectronApp(launched, true)
+    launched = null
     launched = await launchElectronApp({ userData, env: { HA_TEST_ENGINE_SCRIPT: fakeEngine } })
     const recovered = await launched.page.evaluate(() => window.api.downloads.list())
     expect(recovered).toMatchObject({ ok: true, value: { recoveryCount: 1 } })
@@ -91,7 +92,7 @@ test.describe('Phase 2 headless engine', () => {
       return false
     }, id)
     expect(completed).toBe(true)
-    await launched.app.close()
+    await closeElectronApp(launched, true)
     launched = null
     await rm(userData, { recursive: true, force: true })
   })

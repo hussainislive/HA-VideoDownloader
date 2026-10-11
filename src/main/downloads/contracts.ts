@@ -4,6 +4,7 @@ import type { DownloadCallbacks, DownloadRun } from '../engine/ytdlp/download'
 
 export interface DownloadManagerHooks {
   completed(job: DownloadJob): void
+  failed(job: DownloadJob): void
   activity(snapshot: DownloadSnapshot): void
 }
 

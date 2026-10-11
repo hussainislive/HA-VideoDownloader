@@ -9,7 +9,7 @@ export function Card({ className, variant = 'glass', ...props }: CardProps): Rea
   return (
     <div
       className={cn(
-        'border-line rounded-2xl border',
+        'border-line min-w-0 rounded-2xl border',
         variant === 'glass' && 'glass-surface',
         variant === 'solid' && 'bg-surface-solid',
         variant === 'elevated' && 'bg-surface-elevated',

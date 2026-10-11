@@ -27,6 +27,7 @@ export const IPC_CHANNELS = {
   media: { cancelProbe: 'media:cancel-probe', probe: 'media:probe' },
   settings: {
     get: 'settings:get',
+    resetDownloadDir: 'settings:reset-download-dir',
     update: 'settings:update',
     updated: 'settings:updated',
   },
@@ -35,7 +36,9 @@ export const IPC_CHANNELS = {
     showInFolder: 'shell:show-in-folder',
   },
   system: {
+    getStartupNotices: 'system:get-startup-notices',
     getVersion: 'system:get-version',
+    navigate: 'system:navigate',
     openExternal: 'system:open-external',
   },
   window: {

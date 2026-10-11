@@ -5,8 +5,24 @@ import { app, ipcMain, shell } from 'electron'
 
 import { logger } from '../logger'
 import { isAllowedExternalUrl } from '../security/external-url'
+import type { AppServices } from '../services/app-services'
 
-export function registerSystemIpc(): void {
+export function registerSystemIpc(services: AppServices): void {
+  ipcMain.handle(IPC_CHANNELS.system.getStartupNotices, async (_event, input) => {
+    if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
+    try {
+      await services.ready
+      return ok([...services.startupNotices])
+    } catch (error) {
+      logger.error('Unable to read startup notices', error)
+      return err({
+        code: 'SYSTEM_ACTION_FAILED',
+        message: 'Startup recovery details could not be loaded.',
+        retryable: true,
+      })
+    }
+  })
+
   ipcMain.handle(IPC_CHANNELS.system.getVersion, (_event, input): Result<string> => {
     if (!EmptyInputSchema.safeParse(input).success) {
       return err({
@@ -49,4 +65,12 @@ export function registerSystemIpc(): void {
       }
     },
   )
+}
+
+function invalidRequest(): Result<never> {
+  return err({
+    code: 'INVALID_REQUEST',
+    message: 'The system request was not valid.',
+    retryable: false,
+  })
 }

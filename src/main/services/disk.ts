@@ -9,11 +9,15 @@ export async function getFreeBytes(path: string): Promise<number> {
 }
 
 export async function assertWritableDirectory(path: string): Promise<void> {
-  await new Promise<void>((resolve, reject) =>
-    access(path, constants.W_OK, (error) => (error ? reject(error) : resolve())),
-  )
-  const testPath = join(path, `.ha-write-test-${randomUUID()}`)
-  const file = await open(testPath, 'wx')
-  await file.close()
-  await unlink(testPath)
+  try {
+    await new Promise<void>((resolve, reject) =>
+      access(path, constants.W_OK, (error) => (error ? reject(error) : resolve())),
+    )
+    const testPath = join(path, `.ha-write-test-${randomUUID()}`)
+    const file = await open(testPath, 'wx')
+    await file.close()
+    await unlink(testPath)
+  } catch (error) {
+    throw new Error('The selected folder is not writable.', { cause: error })
+  }
 }

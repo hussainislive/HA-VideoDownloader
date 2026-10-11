@@ -7,7 +7,7 @@ import { registerSystemIpc } from './system'
 import { registerWindowIpc } from './window'
 
 export function registerIpc(getWindow: () => BrowserWindow | null, services: AppServices): void {
-  registerSystemIpc()
+  registerSystemIpc(services)
   registerWindowIpc(getWindow)
   registerEngineIpc(services, getWindow)
   registerServiceIpc(services, getWindow)

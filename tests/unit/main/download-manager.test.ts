@@ -57,7 +57,7 @@ async function createManager(directory: string, stallMs = 300): Promise<Download
     new QueueStore(directory),
     history,
     new YtdlpDownloadService(provider, undefined, stallMs),
-    { completed: () => undefined, activity: () => undefined },
+    { completed: () => undefined, failed: () => undefined, activity: () => undefined },
   )
   await manager.initialize(2)
   latestManager = manager

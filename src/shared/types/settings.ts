@@ -1,7 +1,7 @@
 import type { AudioBitrate, AudioFormat, DownloadKind, QualityTier, VideoContainer } from './media'
 
 export interface Settings {
-  schemaVersion: 1
+  schemaVersion: 2
   downloadDir: string
   defaultKind: DownloadKind
   defaultQuality: QualityTier
@@ -12,6 +12,7 @@ export interface Settings {
   autoPasteClipboard: boolean
   notifyOnComplete: boolean
   embedMetadata: boolean
+  keepWindowOnTop: boolean
 }
 
 export interface SettingsUpdate {
@@ -25,4 +26,5 @@ export interface SettingsUpdate {
   autoPasteClipboard?: boolean | undefined
   notifyOnComplete?: boolean | undefined
   embedMetadata?: boolean | undefined
+  keepWindowOnTop?: boolean | undefined
 }

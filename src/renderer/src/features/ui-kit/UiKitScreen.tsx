@@ -14,22 +14,22 @@ import { Spinner } from '@renderer/components/ui/Spinner'
 import { Switch } from '@renderer/components/ui/Switch'
 import { useToast } from '@renderer/components/ui/Toast'
 import { Tooltip } from '@renderer/components/ui/Tooltip'
-import { COPY } from '@renderer/lib/copy'
+import { DEVELOPMENT_COPY } from '@renderer/lib/copy-development'
 import { Bell, PackageOpen } from 'lucide-react'
 import { useState } from 'react'
 
 const SELECT_OPTIONS: readonly SelectOption[] = [
-  { label: COPY.devUiKit.selection.fullHd, value: '1080' },
-  { label: COPY.devUiKit.selection.hd, value: '720' },
-  { disabled: true, label: COPY.devUiKit.selection.unavailable4k, value: '2160' },
+  { label: DEVELOPMENT_COPY.selection.fullHd, value: '1080' },
+  { label: DEVELOPMENT_COPY.selection.hd, value: '720' },
+  { disabled: true, label: DEVELOPMENT_COPY.selection.unavailable4k, value: '2160' },
 ]
 
 const SEGMENTS = [
-  { label: COPY.devUiKit.selection.video, value: 'video' },
-  { label: COPY.devUiKit.selection.audio, value: 'audio' },
+  { label: DEVELOPMENT_COPY.selection.video, value: 'video' },
+  { label: DEVELOPMENT_COPY.selection.audio, value: 'audio' },
 ] as const
 
-const UI_KIT = COPY.devUiKit
+const UI_KIT = DEVELOPMENT_COPY
 
 export default function UiKitScreen(): React.JSX.Element {
   const [dialogOpen, setDialogOpen] = useState(false)

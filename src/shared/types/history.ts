@@ -14,6 +14,10 @@ export interface HistoryItem {
   completedAt: string
 }
 
+export interface LibraryItem extends HistoryItem {
+  fileExists: boolean
+}
+
 export interface LibrarySearchInput {
   query: string
   kind?: 'video' | 'audio' | undefined

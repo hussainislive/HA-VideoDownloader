@@ -14,6 +14,18 @@ export const FALLBACK_OPTIONS: DownloaderOptions = {
   quality: 1080,
 }
 
+export function optionsFromSettings(settings: Settings | undefined): DownloaderOptions {
+  if (!settings) return FALLBACK_OPTIONS
+  return {
+    audioFormat: settings.defaultAudioFormat,
+    bitrate: settings.defaultAudioBitrate,
+    container: settings.defaultContainer,
+    embedMetadata: settings.embedMetadata,
+    kind: settings.defaultKind,
+    quality: settings.defaultQuality,
+  }
+}
+
 export function closestQuality(
   available: readonly QualityTier[],
   preferred: QualityTier,

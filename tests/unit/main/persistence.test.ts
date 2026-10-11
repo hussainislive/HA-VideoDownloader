@@ -47,6 +47,7 @@ describe('JsonStore', () => {
       defaults: () => ({ schemaVersion: 2, name: 'safe' }),
     })
     expect(await store.load()).toEqual({ schemaVersion: 2, name: 'safe' })
+    expect(store.recoveredFromCorruption).toBe(true)
     expect((await readdir(directory)).some((name) => name.startsWith('store.json.corrupt-'))).toBe(
       true,
     )

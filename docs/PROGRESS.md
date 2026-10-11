@@ -7,7 +7,7 @@
 | 1 — Foundation, tooling, design system, window shell | ✅ Complete    |
 | 2 — Engine, queue, persistence                       | ✅ Complete    |
 | 3 — Downloader and Queue UI                          | ✅ Complete    |
-| 4 — Library, Settings, About                         | ⬜ Not started |
+| 4 — Library, Settings, About                         | ✅ Complete    |
 | 5 — Hardening and release                            | ⬜ Not started |
 
 ## Phase 1 plan
@@ -34,6 +34,9 @@
 - 2026-10-11: Completed the real Downloader and Queue UI, normalized per-job renderer store, live engine status, responsive/accessible visual pass, and all deterministic Phase 3 flows.
 - 2026-10-11: Fixed production-bundle development resource resolution, verified changed-job-only renders with React Profiler, held three active jobs above 55 fps, and completed the real Creative Commons UI download smoke.
 - 2026-10-11: Reproduced the owner-supplied yt-dlp's 30-second startup edge, widened native-tool probe budgets, eliminated its duplicate version check, and reran the UI live path successfully.
+- 2026-10-11: Completed Phase 4 on `phase-4-library-settings-about`: real Library, Settings, and About screens plus native notifications, close/recovery protection, single-instance focus, global drop, and shortcut integration.
+- 2026-10-11: Exercised corrupt stores, missing folders, offline and mid-download folder loss, long Unicode titles, 500-row virtualization at 55+ frames per second, relaunch persistence, all-screen axe checks, and visual baselines at 850×600, 1280×800, and 1920×1080.
+- 2026-10-11: Closed Phase 4 with a green `npm run check` (94 Vitest + 32 Electron E2E tests), a production build, clean development launch smoke, local Conventional Commit, and `v0.4.0` tag.
 
 ## Phase 2 plan
 
@@ -59,6 +62,19 @@
 - [x] Refresh screenshots and Phase 3 documentation.
 - [x] Pass `npm run check`, one live end-to-end smoke, and the development golden-path smoke.
 - [x] Create the local Conventional Commit and `v0.3.0` tag after the final repository audit.
+
+## Phase 4 plan
+
+- [x] Build Library search, filter, sort, virtualization, missing-file handling, real totals, and both delete paths.
+- [x] Build Settings location, real engine update states, effective preferences, defaults, and saved feedback.
+- [x] Build About with the local developer photo, fallback, copy-email feedback, allowlisted links, real version, and legal copy.
+- [x] Complete system integration for notification routing, badges/progress, active-download close/recovery, window state, single instance, drag/drop, and shortcuts.
+- [x] Exercise corrupt stores, missing folders, offline failures, Unicode/long titles, and a 500-row history.
+- [x] Add deterministic component and Electron tests, axe checks, and five-screen visual coverage.
+- [x] Complete the cross-screen fidelity, accessibility, responsiveness, and React quality passes.
+- [x] Refresh all five screenshots and Phase 4 documentation.
+- [x] Pass `npm run check`, build, and the development smoke.
+- [x] Create the local Conventional Commits and `v0.4.0` tag after the final repository audit.
 
 ## Known issues
 

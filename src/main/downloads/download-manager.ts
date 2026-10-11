@@ -26,14 +26,12 @@ export class DownloadManager {
   #maxConcurrent = 2
   #emitTimer: NodeJS.Timeout | undefined
   #shuttingDown = false
-
   constructor(
     private readonly queue: QueueStore,
     private readonly history: HistoryStore,
     private readonly engine: DownloadEngine,
     private readonly hooks: DownloadManagerHooks,
   ) {}
-
   async initialize(maxConcurrent: number): Promise<DownloadSnapshot> {
     this.#maxConcurrent = maxConcurrent
     const persisted = (await this.queue.load()).filter((job) => job.state !== 'completed')
@@ -43,7 +41,6 @@ export class DownloadManager {
     this.#changed(true)
     return this.snapshot()
   }
-
   snapshot(): DownloadSnapshot {
     return {
       jobs: structuredClone(this.#jobs),
@@ -218,7 +215,11 @@ export class DownloadManager {
         : completed
       this.#replace(withSize)
       this.hooks.completed(withSize)
-    } else this.#replace(failedOrRetryJob(job, result.error))
+    } else {
+      const failed = failedOrRetryJob(job, result.error)
+      this.#replace(failed)
+      if (failed.state === 'failed') this.hooks.failed(failed)
+    }
     this.#changed(true)
     this.#pump()
   }

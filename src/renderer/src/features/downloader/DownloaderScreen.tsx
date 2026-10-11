@@ -63,9 +63,11 @@ export default function DownloaderScreen(): React.JSX.Element {
   const controller = useDownloader()
   const settings = useSettingsStore((state) => state.settings)
   const activeTab = useUiStore((state) => state.activeTab)
+  const focusRequest = useUiStore((state) => state.downloaderFocusRequest)
+  const droppedUrl = useUiStore((state) => state.droppedUrl)
   const inputRef = useRef<HTMLInputElement>(null)
   const reduceMotion = useReducedMotion()
-  const { clear, lowDiskWarning, paste } = controller
+  const { clear, lowDiskWarning, paste, setUrl } = controller
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
@@ -84,6 +86,19 @@ export default function DownloaderScreen(): React.JSX.Element {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [activeTab, clear, lowDiskWarning, paste])
+
+  useEffect(() => {
+    if (activeTab === 'downloader' && focusRequest > 0) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [activeTab, focusRequest])
+
+  useEffect(() => {
+    if (!droppedUrl) return
+    setUrl(droppedUrl, false)
+    useUiStore.getState().clearDroppedUrl()
+  }, [droppedUrl, setUrl])
 
   return (
     <div

@@ -79,12 +79,13 @@ test.afterEach(async () => {
   launched = null
 })
 
-test('matches Downloader at 850×600 and 1280×800 without scrolling', async () => {
+test('matches Downloader at all required sizes without scrolling', async () => {
   const { page } = current()
   await readyDownloader()
   for (const [width, height, name] of [
     [850, 600, 'phase3-downloader-850.png'],
     [1280, 800, 'phase3-downloader-1280.png'],
+    [1920, 1080, 'phase3-downloader-1920.png'],
   ] as const) {
     await resize(width, height)
     await expect
@@ -92,10 +93,11 @@ test('matches Downloader at 850×600 and 1280×800 without scrolling', async () 
       .toBe(true)
     await expect(page).toHaveScreenshot(name, { animations: 'disabled' })
   }
+  await resize(1280, 800)
   await page.screenshot({ animations: 'disabled', path: join('docs/images/downloader.png') })
 })
 
-test('matches a real paused/queued Queue at 850×600 and 1280×800', async () => {
+test('matches a real paused/queued Queue at all required sizes', async () => {
   const { page } = current()
   await enqueueJobs(3, 'slow-visual')
   await page.getByRole('tab', { name: /Queue/u }).click()
@@ -113,10 +115,12 @@ test('matches a real paused/queued Queue at 850×600 and 1280×800', async () =>
   for (const [width, height, name] of [
     [850, 600, 'phase3-queue-850.png'],
     [1280, 800, 'phase3-queue-1280.png'],
+    [1920, 1080, 'phase3-queue-1920.png'],
   ] as const) {
     await resize(width, height)
     await expect(page).toHaveScreenshot(name, { animations: 'disabled' })
   }
+  await resize(1280, 800)
   await page.screenshot({ animations: 'disabled', path: join('docs/images/queue.png') })
 })
 
