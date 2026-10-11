@@ -4,10 +4,11 @@ import { join } from 'node:path'
 import type { Settings, SettingsUpdate } from '@shared/types/settings'
 import { z } from 'zod'
 
+import { logger } from '../logger'
 import { JsonStore } from './json-store'
 
 const SettingsSchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(2),
   downloadDir: z.string(),
   defaultKind: z.enum(['video', 'audio']),
   defaultQuality: z.union([
@@ -24,26 +25,32 @@ const SettingsSchema = z.object({
   autoPasteClipboard: z.boolean(),
   notifyOnComplete: z.boolean(),
   embedMetadata: z.boolean(),
+  keepWindowOnTop: z.boolean(),
 })
 
 function migrateSettings(raw: unknown): unknown {
   if (typeof raw !== 'object' || raw === null) return raw
-  if (!('schemaVersion' in raw)) return { ...raw, schemaVersion: 1 }
+  if (!('schemaVersion' in raw) || raw.schemaVersion === 1) {
+    return { ...raw, schemaVersion: 2, keepWindowOnTop: false }
+  }
   return raw
 }
 
 export class SettingsStore {
   readonly #store: JsonStore<Settings>
+  readonly defaultDownloadDir: string
   #settings?: Settings
+  initializationIssue?: string
 
   constructor(userData: string, downloadsPath: string) {
     const downloadDir = join(downloadsPath, 'HA-Downloader')
+    this.defaultDownloadDir = downloadDir
     this.#store = new JsonStore({
       path: join(userData, 'settings.json'),
       schema: SettingsSchema,
       migrate: migrateSettings,
       defaults: () => ({
-        schemaVersion: 1,
+        schemaVersion: 2,
         downloadDir,
         defaultKind: 'video',
         defaultQuality: 1080,
@@ -54,6 +61,7 @@ export class SettingsStore {
         autoPasteClipboard: true,
         notifyOnComplete: true,
         embedMetadata: true,
+        keepWindowOnTop: false,
       }),
       debounceMs: 300,
     })
@@ -61,8 +69,18 @@ export class SettingsStore {
 
   async initialize(): Promise<Settings> {
     this.#settings = await this.#store.load()
-    await mkdir(this.#settings.downloadDir, { recursive: true })
+    try {
+      await mkdir(this.#settings.downloadDir, { recursive: true })
+    } catch (error) {
+      logger.warn('Unable to create the configured download folder', error)
+      this.initializationIssue =
+        'The download folder could not be created. Choose a writable folder in Settings.'
+    }
     return this.#settings
+  }
+
+  get recoveredFromCorruption(): boolean {
+    return this.#store.recoveredFromCorruption
   }
 
   get value(): Settings {
@@ -76,6 +94,10 @@ export class SettingsStore {
     this.#settings = next
     this.#store.schedule(next)
     return next
+  }
+
+  resetDownloadDir(): Promise<Settings> {
+    return this.update({ downloadDir: this.defaultDownloadDir })
   }
 
   flush(): Promise<void> {

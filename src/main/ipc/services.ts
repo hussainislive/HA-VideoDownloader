@@ -37,6 +37,18 @@ export function registerServiceIpc(services: AppServices, getWindow: WindowGette
       if (parsed.data.downloadDir) await assertWritableDirectory(parsed.data.downloadDir)
       const settings = await services.settings.update(parsed.data)
       services.downloads?.setMaxConcurrent(settings.maxConcurrent)
+      getWindow()?.setAlwaysOnTop(settings.keepWindowOnTop)
+      safeSend(getWindow(), IPC_CHANNELS.settings.updated, settings)
+      return ok(settings)
+    } catch (error) {
+      return ipcFailure(error)
+    }
+  })
+  ipcMain.handle(IPC_CHANNELS.settings.resetDownloadDir, async (_event, input) => {
+    if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
+    try {
+      await services.ready
+      const settings = await services.settings.resetDownloadDir()
       safeSend(getWindow(), IPC_CHANNELS.settings.updated, settings)
       return ok(settings)
     } catch (error) {
@@ -47,7 +59,7 @@ export function registerServiceIpc(services: AppServices, getWindow: WindowGette
     if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
     try {
       await services.ready
-      return ok(services.history.list())
+      return ok(await services.history.listWithStatus())
     } catch (error) {
       return ipcFailure(error)
     }
@@ -57,7 +69,7 @@ export function registerServiceIpc(services: AppServices, getWindow: WindowGette
     if (!parsed.success) return invalidRequest()
     try {
       await services.ready
-      return ok(services.history.search(parsed.data))
+      return ok(await services.history.search(parsed.data))
     } catch (error) {
       return ipcFailure(error)
     }
@@ -68,7 +80,6 @@ export function registerServiceIpc(services: AppServices, getWindow: WindowGette
     try {
       await services.ready
       const items = await services.history.delete(parsed.data.id, parsed.data.deleteFile)
-      safeSend(getWindow(), IPC_CHANNELS.library.updated, items)
       return ok(items)
     } catch (error) {
       return ipcFailure(error)
@@ -122,4 +133,12 @@ export function registerServiceIpc(services: AppServices, getWindow: WindowGette
   }
   pathAction(IPC_CHANNELS.shell.showInFolder, showInFolder)
   pathAction(IPC_CHANNELS.shell.openFile, openFile)
+
+  void services.ready.then(() => {
+    services.history.subscribe(() => {
+      void services.history
+        .listWithStatus()
+        .then((items) => safeSend(getWindow(), IPC_CHANNELS.library.updated, items))
+    })
+  })
 }

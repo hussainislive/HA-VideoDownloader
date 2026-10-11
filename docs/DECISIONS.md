@@ -142,3 +142,26 @@ memoized Queue card selects only its own ID. This avoids an all-row render at
 every 5 Hz progress batch while keeping ordering and aggregate values in one
 authoritative store. A React Profiler regression verifies that changing one of
 two jobs produces one card update and zero updates for the untouched card.
+
+## ADR-015 — Keep Library file status transient and virtualize by threshold
+
+**Status:** Accepted · **Date:** 2026-10-11
+
+History JSON continues to store durable download metadata only. Library derives
+`fileExists` in the main process with `fs.access` batches of 32 and refreshes it
+on mount, focus, and history changes; filesystem status is never persisted.
+Lists with 50 or fewer items render directly, while larger lists use fixed
+84-pixel virtual slots. This keeps the 5,000-entry cap responsive without a
+database or stale existence flags, at the cost of a bounded filesystem scan
+when Library refreshes.
+
+## ADR-016 — Guard close in the main process with one idempotent shutdown
+
+**Status:** Accepted · **Date:** 2026-10-11
+
+BrowserWindow's native `close` event is the authoritative exit boundary. When
+active work exists, the main process shows one native confirmation; choosing
+Pause & Quit invokes an idempotent service shutdown, tree-kills active engines,
+keeps partial files, flushes stores, and then closes only if the window still
+exists. Renderer-only prompts were rejected because operating-system quit,
+window controls, and repeated close events can bypass or race renderer state.

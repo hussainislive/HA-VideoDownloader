@@ -44,6 +44,12 @@ Phase 3 component and renderer-store tests additionally cover:
 - completed file actions and normalized-store object identity;
 - a React Profiler assertion showing one changed job re-renders its subscriber while an untouched job renders zero times.
 
+Phase 4 unit and integration tests additionally cover:
+
+- Library search across title, uploader, and platform plus all sort/filter modes and Unicode-safe matching;
+- settings schema-v1 migration, corrupt-settings quarantine/default restoration, and persisted keep-on-top state;
+- batched missing-file status, history-only deletion, optional file deletion, close-guard active-state counting, and the download-manager shutdown path.
+
 Phase 2 unit and integration tests additionally cover:
 
 - streaming UTF-8/CRLF splitting, huge output, exit codes, and process-tree killing including a grandchild;
@@ -68,8 +74,24 @@ Phase 3 Electron E2E additionally covers:
 - live queue badge counts, pause/resume/cancel confirmation, failure/retry, and audio extraction;
 - stale-probe cancellation and a ready engine status when launching the production bundle;
 - zero serious/critical axe findings on Downloader and Queue;
-- reviewed snapshots at 850×600 and 1280×800 with no content scrolling;
+- reviewed snapshots at 850×600, 1280×800, and 1920×1080 with no content scrolling;
 - at least 55 requestAnimationFrame callbacks in one second while three jobs actively progress.
+
+Phase 4 Electron E2E additionally covers:
+
+- Library search/filter, missing-file state, Play/Open disabling, history-only deletion, and deletion with the media file;
+- instant settings, live always-on-top behavior, defaults feeding Downloader, engine-update feedback, and settings/window-state persistence across a real relaunch;
+- the local About photo, email copy toast, approved external destinations, and rejection of a non-allowlisted host;
+- active-download close confirmation, paused-job relaunch recovery, native notification click-to-Queue, single-instance restore/focus, global link drop, and shortcut focus;
+- corrupt history quarantine, offline probing, a missing output folder before enqueue, and folder removal during a live fake download;
+- long Arabic/Latin/emoji titles and a 500-row Library with fewer than 25 mounted rows and at least 55 animation frames during a one-second scroll;
+- axe checks on populated Library, Settings, and About states plus the existing all-five-screen shell pass;
+- reviewed visual baselines for every screen at 850×600, 1280×800, and 1920×1080, with explicit root and main-content horizontal-overflow assertions.
+
+The completed Phase 4 gate contains 94 passing Vitest tests across 24 files and
+32 passing deterministic Electron E2E tests. Live coverage is intentionally
+separate and is not required for Phase 4 because no engine argument or process
+execution behavior changed.
 
 axe uses its documented legacy aggregation mode because Playwright's default blank-page aggregator cannot create a second target through Electron automation. The application has no frames, so cross-origin frame coverage is not lost.
 
@@ -141,6 +163,7 @@ Only update snapshots after intentional UI changes and inspect the resulting PNG
 ```sh
 npm run build
 npx playwright test tests/e2e/phase3-visual.spec.ts --update-snapshots
+npx playwright test tests/e2e/phase4-visual.spec.ts --update-snapshots
 ```
 
-The Phase 3 visual test writes reviewed baselines under `tests/e2e/visual/` and current README captures directly into `docs/images/`.
+The Phase 3 and Phase 4 visual tests write reviewed baselines under `tests/e2e/visual/` and current 1280×800 README captures directly into `docs/images/`.

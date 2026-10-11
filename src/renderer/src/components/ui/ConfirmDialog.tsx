@@ -1,9 +1,10 @@
 import { COPY } from '@renderer/lib/copy'
-import { useEffect, useRef } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 
 import { Button } from './Button'
 
 interface ConfirmDialogProps {
+  children?: ReactNode
   confirmLabel?: string
   description: string
   onCancel: () => void
@@ -13,6 +14,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
+  children,
   confirmLabel = COPY.actions.confirm,
   description,
   onCancel,
@@ -68,6 +70,7 @@ export function ConfirmDialog({
         <p className="text-fg-muted mt-2 text-xs leading-5" id="confirm-dialog-description">
           {description}
         </p>
+        {children ? <div className="mt-3">{children}</div> : null}
         <div className="mt-5 flex justify-end gap-2">
           <Button onClick={onCancel}>{COPY.actions.cancel}</Button>
           <Button onClick={onConfirm} variant="danger">

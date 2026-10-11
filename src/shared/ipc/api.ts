@@ -1,11 +1,12 @@
 import type { DownloadJob, DownloadSnapshot, EnqueueDownloadInput } from '../types/download'
 import type { EngineStatus, EngineUpdateResult } from '../types/engine'
-import type { HistoryItem, LibrarySearchInput } from '../types/history'
+import type { LibraryItem, LibrarySearchInput } from '../types/history'
 import type { MediaInfo } from '../types/media'
 import type { Result } from '../types/result'
 import type { Settings, SettingsUpdate } from '../types/settings'
 
 export type AppPlatform = 'darwin' | 'win32'
+export type NavigationTarget = 'queue' | 'settings'
 
 export interface HaApi {
   clipboard: {
@@ -31,10 +32,10 @@ export interface HaApi {
     onStatusChanged: (listener: (status: EngineStatus) => void) => () => void
   }
   library: {
-    delete: (id: string, deleteFile: boolean) => Promise<Result<HistoryItem[]>>
-    list: () => Promise<Result<HistoryItem[]>>
-    search: (input: LibrarySearchInput) => Promise<Result<HistoryItem[]>>
-    onUpdated: (listener: (items: HistoryItem[]) => void) => () => void
+    delete: (id: string, deleteFile: boolean) => Promise<Result<LibraryItem[]>>
+    list: () => Promise<Result<LibraryItem[]>>
+    search: (input: LibrarySearchInput) => Promise<Result<LibraryItem[]>>
+    onUpdated: (listener: (items: LibraryItem[]) => void) => () => void
   }
   media: {
     cancelProbe: () => Promise<Result<undefined>>
@@ -42,6 +43,7 @@ export interface HaApi {
   }
   settings: {
     get: () => Promise<Result<Settings>>
+    resetDownloadDir: () => Promise<Result<Settings>>
     update: (update: SettingsUpdate) => Promise<Result<Settings>>
     onUpdated: (listener: (settings: Settings) => void) => () => void
   }
@@ -51,7 +53,9 @@ export interface HaApi {
   }
   system: {
     getPlatform: () => AppPlatform
+    getStartupNotices: () => Promise<Result<string[]>>
     getVersion: () => Promise<Result<string>>
+    onNavigate: (listener: (target: NavigationTarget) => void) => () => void
     openExternal: (url: string) => Promise<Result<undefined>>
   }
   window: {

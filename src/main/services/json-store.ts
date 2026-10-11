@@ -20,6 +20,7 @@ export class JsonStore<T> {
   #timer: NodeJS.Timeout | undefined
   #pending: T | undefined
   #writeChain = Promise.resolve()
+  #recoveredFromCorruption = false
 
   constructor(options: JsonStoreOptions<T>) {
     this.#path = options.path
@@ -35,12 +36,20 @@ export class JsonStore<T> {
       const parsed = this.#schema.safeParse(this.#migrate(raw))
       if (parsed.success) return parsed.data
       await this.#quarantine()
+      this.#recoveredFromCorruption = true
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') await this.#quarantine()
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        await this.#quarantine()
+        this.#recoveredFromCorruption = true
+      }
     }
     const defaults = this.#defaults()
     await this.saveNow(defaults)
     return defaults
+  }
+
+  get recoveredFromCorruption(): boolean {
+    return this.#recoveredFromCorruption
   }
 
   schedule(value: T): void {

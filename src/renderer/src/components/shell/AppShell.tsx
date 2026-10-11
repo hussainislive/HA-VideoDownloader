@@ -1,6 +1,7 @@
 import { useAppSync } from '@renderer/hooks/use-app-sync'
 import { useDownloadNotifications } from '@renderer/hooks/use-download-notifications'
-import { COPY } from '@renderer/lib/copy'
+import { useSystemIntegration } from '@renderer/hooks/use-system-integration'
+import { DEVELOPMENT_COPY } from '@renderer/lib/copy-development'
 import { selectQueueCount, useDownloadStore } from '@renderer/store/download-store'
 import { useUiStore } from '@renderer/store/ui-store'
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
@@ -24,6 +25,7 @@ const UiKitScreen = lazy(() => import('@renderer/features/ui-kit/UiKitScreen'))
 export function AppShell(): React.JSX.Element {
   useAppSync()
   useDownloadNotifications()
+  useSystemIntegration()
   const activeTab = useUiStore((state) => state.activeTab)
   const setActiveTab = useUiStore((state) => state.setActiveTab)
   const visited = useUiStore((state) => state.visitedTabs)
@@ -62,6 +64,7 @@ export function AppShell(): React.JSX.Element {
       } else if (event.key.toLowerCase() === 'l') {
         event.preventDefault()
         changeTab('downloader')
+        useUiStore.getState().requestDownloaderFocus()
       }
     }
     window.addEventListener('keydown', handleShortcut)
@@ -72,10 +75,20 @@ export function AppShell(): React.JSX.Element {
     <div
       className="from-canvas-from to-canvas-to flex h-full min-h-0 min-w-[850px] flex-col overflow-hidden bg-gradient-to-b"
       data-testid="app-shell"
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault()
+        const text =
+          event.dataTransfer.getData('text/uri-list') || event.dataTransfer.getData('text/plain')
+        const url = text
+          .split(/\s+/u)
+          .find((token) => token.startsWith('https://') || token.startsWith('http://'))
+        if (url) useUiStore.getState().acceptDroppedUrl(url)
+      }}
     >
       <TitleBar />
       <TabBar activeTab={activeTab} onChange={changeTab} queueCount={queueCount} />
-      <main className="@container min-h-0 flex-1 overflow-y-auto p-5">
+      <main className="@container min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-5">
         {showUiKit ? (
           <Suspense fallback={<ScreenSkeleton />}>
             <UiKitScreen />
@@ -105,7 +118,7 @@ export function AppShell(): React.JSX.Element {
       </main>
       {import.meta.env.DEV ? (
         <div className="text-fg-muted/60 pointer-events-none absolute right-3 bottom-2 text-[9px]">
-          {COPY.devUiKit.title}: Ctrl/⌘ Shift U
+          {DEVELOPMENT_COPY.title}: Ctrl/⌘ Shift U
         </div>
       ) : null}
     </div>

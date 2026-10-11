@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-11
+
+### Added
+
+- Real Library search, filtering, sorting, totals, missing-file detection, safe history/file deletion, and fixed-row virtualization beyond 50 entries.
+- Functional Settings for download location, engine diagnostics/update feedback, defaults, live concurrency, clipboard behavior, notifications, and window priority with schema-v2 persistence.
+- Complete About screen using the local developer portrait, fallback avatar, copy-email feedback, allowlisted GitHub/LinkedIn/PayPal actions, real application version, and legal notice.
+- Native completion/failure notifications that focus Queue, macOS dock badges, taskbar progress, active-download close confirmation, relaunch recovery, single-instance focus, global link drop, and shortcut routing.
+- Phase 4 corruption, missing-folder, offline, Unicode, 500-row performance, relaunch, notification, accessibility, and three-size visual regression coverage.
+
+### Fixed
+
+- Make download-manager shutdown idempotent and guard window close while work is active, preventing repeated close events from acting on destroyed Electron objects.
+- Keep every nested card within its responsive grid track and cap dense workspaces on tall displays, eliminating Settings overflow and oversized About/Settings surfaces.
+- Launch Electron tests from the application root so `app.getVersion()` reports the package version instead of Electron's runtime version.
+
 ## [0.3.0] - 2026-10-11
 
 ### Added
@@ -56,7 +72,8 @@ All notable changes to this project will be documented in this file. The format 
 - Cancel and guard the window fade timer when a rapidly closed BrowserWindow is destroyed, preventing repeated main-process error dialogs.
 - Capture Electron visual baselines through the native web contents so macOS automation records rendered pixels instead of a black surface.
 
-[Unreleased]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/hussainislive/HA-VideoDownloader/releases/tag/v0.1.0

@@ -61,5 +61,6 @@ export const SettingsUpdateInputSchema = z
     autoPasteClipboard: z.boolean().optional(),
     notifyOnComplete: z.boolean().optional(),
     embedMetadata: z.boolean().optional(),
+    keepWindowOnTop: z.boolean().optional(),
   })
   .strict()

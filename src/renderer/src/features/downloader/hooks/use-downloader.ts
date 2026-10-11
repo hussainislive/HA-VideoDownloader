@@ -1,4 +1,5 @@
 import { useToast } from '@renderer/components/ui/Toast'
+import { useFreeBytes } from '@renderer/hooks/use-free-bytes'
 import { COPY } from '@renderer/lib/copy'
 import { useSettingsStore } from '@renderer/store/settings-store'
 import { navigateToTab, useUiStore } from '@renderer/store/ui-store'
@@ -14,7 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   closestQuality,
   createEnqueueInput,
-  FALLBACK_OPTIONS,
+  optionsFromSettings,
   settingsUpdate,
 } from '../downloader-options'
 import type { DownloaderController, DownloaderOptions, LinkPhase } from '../downloader-types'
@@ -23,33 +24,27 @@ const probeCache = new Map<string, MediaInfo>()
 
 export function useDownloader(): DownloaderController {
   const settings = useSettingsStore((state) => state.settings)
+  const freeBytes = useFreeBytes(settings?.downloadDir)
   const { showToast } = useToast()
   const [url, setUrlState] = useState('')
   const [phase, setPhase] = useState<LinkPhase>('idle')
   const [media, setMedia] = useState<MediaInfo>()
   const [userMessage, setUserMessage] = useState<string>()
-  const [freeBytes, setFreeBytes] = useState<number>()
   const [isEnqueuing, setIsEnqueuing] = useState(false)
   const [lowDiskWarning, setLowDiskWarning] = useState(false)
-  const [options, setOptions] = useState<DownloaderOptions>(FALLBACK_OPTIONS)
+  const [options, setOptions] = useState<DownloaderOptions>(() => optionsFromSettings(settings))
   const requestId = useRef(0)
   const userEdited = useRef(false)
   const lastClipboardUrl = useRef('')
-  const appliedSettings = useRef(false)
   const pendingPreserveUrl = useRef(false)
 
   useEffect(() => {
-    if (!settings || appliedSettings.current) return
-    appliedSettings.current = true
-    setOptions({
-      audioFormat: settings.defaultAudioFormat,
-      bitrate: settings.defaultAudioBitrate,
-      container: settings.defaultContainer,
-      embedMetadata: settings.embedMetadata,
-      kind: settings.defaultKind,
-      quality: settings.defaultQuality,
+    return useSettingsStore.subscribe((state, previous) => {
+      if (phase === 'idle' && state.settings !== previous.settings) {
+        setOptions(optionsFromSettings(state.settings))
+      }
     })
-  }, [settings])
+  }, [phase])
 
   const probe = useCallback(async (rawUrl: string): Promise<void> => {
     const id = ++requestId.current
@@ -98,15 +93,6 @@ export function useDownloader(): DownloaderController {
       void window.api.media.cancelProbe()
     }
   }, [probe, url])
-
-  useEffect(() => {
-    const refresh = async (): Promise<void> => {
-      if (!settings?.downloadDir) return
-      const result = await window.api.disk.getFreeBytes(settings.downloadDir)
-      if (result.ok) setFreeBytes(result.value)
-    }
-    void refresh()
-  }, [settings?.downloadDir])
 
   const setUrl = useCallback((value: string, userInitiated = true): void => {
     userEdited.current = userInitiated && value.trim().length > 0

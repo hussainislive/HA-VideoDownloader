@@ -50,27 +50,34 @@ references. The source files remain unchanged.
 
 ## Library reference
 
-- Preserve search/filter/sort, compact history rows, footer summary, and empty
-  state for Phase 4.
+- Preserved search/filter/sort, compact history rows, footer summary, and both
+  empty states. Rows are fixed-height and virtualized beyond 50 entries.
 - Remove `v3.4 PRO`, hard-coded item counts/sizes/paths, sample history,
   toggle-demo control, and remote thumbnails.
 - The reference is 860×640 with rectangular tabs; the higher-priority shared
   shell establishes 850×600 and pill tabs.
+- Missing output files receive a quiet warning badge and disabled file actions;
+  deletion offers the specification's optional disk-removal checkbox.
 
 ## Settings reference
 
-- Preserve Download Location, Engine, and Preferences card groupings for
-  Phase 4, including auto-paste, notifications, and keep-on-top.
+- Preserved Download Location, Engine, and Preferences card groupings,
+  including auto-paste, notifications, keep-on-top, defaults, and concurrency.
 - Remove `v2.4 PRO`, “4K ProRes • Ultra Engine,” “Dual Core,” fabricated engine
   versions/dates/codecs, free-space and RAM values, config-path telemetry,
   “Check App Updates,” and simulated update responses.
 - FFmpeg licensing is not “permissive” for the supplied GPL-enabled build; the
-  production copy will accurately identify third-party licensing.
+  production copy accurately identifies the bundled engine without making that
+  claim. Free space, versions, paths, and update feedback are all live.
+- The three preference selects use a two-column responsive grid instead of the
+  reference's two wide controls because concurrency is explicitly required by
+  the specification. Dense cards stop stretching on displays taller than
+  900px while the 850×600 composition remains unchanged.
 
 ## About reference
 
-- Preserve the two-column profile/about layout, expertise chips, open-source
-  card, connect/support row, and compact footer for Phase 4.
+- Preserved the two-column profile/about layout, expertise chips, open-source
+  card, connect/support row, and compact footer.
 - Replace the temporary remote portrait with
   `src/renderer/src/assets/developer.jpg`, sourced from the supplied
   `design/assets/developer.PNG`.
@@ -78,3 +85,6 @@ references. The source files remain unchanged.
   the project repository when public, and version copy to `app.getVersion()`.
 - Add the required legal sentence; route every external action through the
   main-process allowlist.
+- Removed the reference's fabricated app build number, company link, and
+  framework-version telemetry. The profile image has an initials fallback and
+  every icon-only profile action has an accessible tooltip/label.

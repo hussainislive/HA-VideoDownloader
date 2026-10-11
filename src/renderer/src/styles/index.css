@@ -84,6 +84,24 @@ body {
   contain-intrinsic-size: auto 82px;
 }
 
+.library-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 76px;
+}
+
+.bounded-workspace {
+  height: 100%;
+}
+
+@media (min-height: 900px) {
+  .bounded-workspace {
+    height: 520px;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
 button,
 input,
 [role='button'] {

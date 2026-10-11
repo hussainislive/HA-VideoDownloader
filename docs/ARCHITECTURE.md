@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the Phase 3 application boundary. The main process owns the real engine and persisted data; the responsive Downloader and Queue consume only the narrow validated preload API.
+This document describes the Phase 4 application boundary. The main process owns the real engine, persisted data, filesystem checks, and native integration; all five responsive screens consume only the narrow validated preload API.
 
 ## Process model
 
@@ -12,7 +12,7 @@ flowchart LR
   Preload --> API[window.api]
   API --> Renderer[React renderer]
   Renderer --> Mirrors[Normalized Zustand mirrors]
-  Mirrors --> Screens[Downloader / Queue]
+  Mirrors --> Screens[Downloader / Queue / Library / Settings / About]
   Main --> Logs[Local rotating logs]
   Main --> State[Validated window-state JSON]
   Main --> Manager[Download manager]
@@ -37,12 +37,12 @@ The main process owns operating-system capabilities, application state, navigati
 
 ```text
 src/main/index.ts                 application lifecycle and single-instance lock
-src/main/window/                  BrowserWindow creation, fade, and persisted bounds
+src/main/window/                  BrowserWindow creation, close guard, fade, persisted bounds
 src/main/security/                CSP, navigation guards, external URL policy
 src/main/ipc/                     validated system, engine, queue, and service handlers
 src/main/engine/                  binary install/update, ProcessRunner, yt-dlp adapters
 src/main/downloads/               pure state machine and concurrent manager
-src/main/services/                JSON stores, disk, files, clipboard, notifications
+src/main/services/                JSON stores, disk, files, clipboard, notifications, OS activity
 src/main/menu.ts                  native application menus
 src/main/logger.ts                redacted local logging
 
@@ -51,9 +51,9 @@ src/preload/index.d.ts            renderer global API declaration
 
 src/renderer/src/components/ui/   reusable accessible primitives
 src/renderer/src/components/shell title bar, tabs, controls, boundaries
-src/renderer/src/features/        lazy screens, Downloader controller, Queue cards
+src/renderer/src/features/        five lazy screens and feature-scoped components/hooks
 src/renderer/src/hooks/           lifecycle-safe application subscriptions
-src/renderer/src/store/           normalized downloads, settings, engine, navigation
+src/renderer/src/store/           normalized downloads, Library, settings, engine, navigation
 src/renderer/src/lib/copy.ts       renderer-visible English
 src/renderer/src/styles/index.css semantic tokens and global styles
 
@@ -104,23 +104,27 @@ strings.
 
 ## IPC contract
 
-| Channel                   | Direction       | Input         | Result                               |
-| ------------------------- | --------------- | ------------- | ------------------------------------ |
-| `system:get-version`      | renderer → main | `undefined`   | app version                          |
-| `system:open-external`    | renderer → main | `{ url }`     | success or allowlist error           |
-| `window:minimize`         | renderer → main | `undefined`   | success                              |
-| `window:toggle-maximize`  | renderer → main | `undefined`   | maximized state                      |
-| `window:is-maximized`     | renderer → main | `undefined`   | maximized state                      |
-| `window:close`            | renderer → main | `undefined`   | success before close                 |
-| `window:maximize-changed` | main → renderer | boolean event | unsubscribe function in preload API  |
-| `engine:get-status`       | renderer → main | `undefined`   | real binary paths/versions/readiness |
-| `media:probe`             | renderer → main | `{ url }`     | normalized media metadata/formats    |
-| `media:cancel-probe`      | renderer → main | `undefined`   | cancels the current probe tree       |
-| `downloads:*`             | both directions | typed jobs    | snapshot/actions + batched events    |
-| `settings:*`              | both directions | typed updates | persisted settings + change events   |
-| `dialog:choose-folder`    | renderer → main | `undefined`   | selected path or cancel              |
-| `disk:get-free-bytes`     | renderer → main | `{ path }`    | available bytes                      |
-| `clipboard:write-text`    | renderer → main | `{ text }`    | completion-menu copy result          |
+| Channel                      | Direction       | Input         | Result                               |
+| ---------------------------- | --------------- | ------------- | ------------------------------------ |
+| `system:get-version`         | renderer → main | `undefined`   | app version                          |
+| `system:get-startup-notices` | renderer → main | `undefined`   | recovered-store/folder notices       |
+| `system:open-external`       | renderer → main | `{ url }`     | success or allowlist error           |
+| `system:navigate`            | main → renderer | tab event     | notification-driven navigation       |
+| `window:minimize`            | renderer → main | `undefined`   | success                              |
+| `window:toggle-maximize`     | renderer → main | `undefined`   | maximized state                      |
+| `window:is-maximized`        | renderer → main | `undefined`   | maximized state                      |
+| `window:close`               | renderer → main | `undefined`   | success before close                 |
+| `window:maximize-changed`    | main → renderer | boolean event | unsubscribe function in preload API  |
+| `engine:get-status`          | renderer → main | `undefined`   | real binary paths/versions/readiness |
+| `media:probe`                | renderer → main | `{ url }`     | normalized media metadata/formats    |
+| `media:cancel-probe`         | renderer → main | `undefined`   | cancels the current probe tree       |
+| `downloads:*`                | both directions | typed jobs    | snapshot/actions + batched events    |
+| `library:*`                  | both directions | typed queries | history/status/delete + change event |
+| `settings:*`                 | both directions | typed updates | persisted settings + change events   |
+| `dialog:choose-folder`       | renderer → main | `undefined`   | selected path or cancel              |
+| `disk:get-free-bytes`        | renderer → main | `{ path }`    | available bytes                      |
+| `clipboard:*`                | renderer → main | typed text    | URL read and safe text write         |
+| `shell:*`                    | renderer → main | `{ path }`    | play/open-location result            |
 
 Domain methods live under `window.api.engine`, `media`, `downloads`,
 `library`, `settings`, `dialog`, `shell`, and `clipboard`. Every request has a
@@ -214,10 +218,17 @@ sequenceDiagram
 `settings.json`, `queue.json`, and `history.json` are schema-versioned and
 zod-validated. Writes use a temporary file, file `fsync`, rename, and directory
 `fsync`. Invalid JSON is renamed with a `.corrupt-<timestamp>` suffix and safe
-defaults are recreated. Queue writes debounce at 500 ms and settings at 300 ms.
+defaults are recreated, with a non-technical startup notice in the renderer.
+Settings schema v2 adds `keepWindowOnTop`; v1 files migrate it to `false`.
+Queue writes debounce at 500 ms and settings at 300 ms.
 An interrupted active job becomes paused at launch; queued and paused recovery
 jobs do not start until explicitly resumed. History is newest-first and capped
 at 5,000 entries.
+
+History persists only durable media metadata. File existence is transient: the
+main process checks paths with `fs.access` in batches of 32 when Library loads or
+refreshes. The renderer virtualizes fixed-height rows beyond 50 items and never
+writes derived missing-file state back to disk.
 
 ## Renderer state and rendering
 
@@ -238,6 +249,27 @@ main-process probes, derives quality availability and estimates from the real
 media formats, persists changed defaults through settings IPC, and sends a
 fully validated enqueue request. The title-bar engine pill is driven by the
 same live engine mirror.
+
+Library keeps only query/filter/sort/delete-dialog state locally; its shared
+mirror refreshes on focus and history events. Settings writes through validated
+IPC and applies concurrency and always-on-top state immediately. About reads
+the version from `app.getVersion()` and routes every external action through the
+allowlist. A shell-level integration hook handles startup notices and native
+notification navigation without importing privileged modules.
+
+## Native lifecycle and activity
+
+The close guard intercepts BrowserWindow close while a job is starting,
+downloading, or processing. A native confirmation either returns to the app or
+runs one idempotent shutdown that tree-kills active work, preserves `.part`
+files, flushes stores, and closes only while the window is still alive. Relaunch
+offers interrupted work through the existing recovery prompt.
+
+Completed or failed jobs may create a native notification when the preference
+is enabled and the app is not focused. Clicking it shows/focuses the window and
+sends a narrow `queue` navigation event. Download snapshots also drive the
+macOS dock badge and BrowserWindow progress bar; no renderer polling is needed.
+The single-instance handler restores and focuses the existing window.
 
 ## Window state
 

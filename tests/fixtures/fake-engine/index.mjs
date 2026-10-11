@@ -30,6 +30,10 @@ if (args.includes('-J')) {
     process.stderr.write('ERROR: This video is not available in your country\n')
     process.exit(1)
   }
+  if (url.includes('offline')) {
+    process.stderr.write('ERROR: Unable to connect: Network is unreachable\n')
+    process.exit(1)
+  }
   process.stdout.write(
     JSON.stringify({
       id: 'fake-id',
@@ -110,7 +114,13 @@ if (url.includes('stall')) {
 }
 for (let step = 1; step <= 10 && !stopped; step += 1) {
   process.stdout.write(`HA|downloading|${step * 100}|1000|NA|500|${10 - step}|NA|NA\n`)
-  const delay = url.includes('perf') ? 200 : url.includes('slow') ? 100 : 8
+  const delay = url.includes('concurrency')
+    ? 500
+    : url.includes('perf')
+      ? 200
+      : url.includes('slow')
+        ? 100
+        : 8
   await new Promise((resolve) => setTimeout(resolve, delay))
 }
 process.stderr.write('[Merger] Merging formats into output\n')

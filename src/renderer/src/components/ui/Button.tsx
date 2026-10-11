@@ -34,7 +34,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       className={cn(
-        'duration-fast ease-standard inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-semibold transition-[transform,opacity,background-color,border-color,color] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45',
+        'duration-fast ease-standard inline-flex shrink-0 items-center justify-center gap-2 rounded-xl font-semibold whitespace-nowrap transition-[transform,opacity,background-color,border-color,color] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 [&_svg]:shrink-0',
         variants[variant],
         sizes[size],
         className,
@@ -43,7 +43,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...props}
     >
       {loading ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : null}
-      <span className={cn(loading && 'opacity-80')}>{children}</span>
+      <span
+        className={cn(
+          'inline-flex max-w-full min-w-0 items-center justify-center gap-2 whitespace-nowrap',
+          loading && 'opacity-80',
+        )}
+      >
+        {children}
+      </span>
     </button>
   )
 })

@@ -1,8 +1,8 @@
-import type { AppPlatform, HaApi } from '@shared/ipc/api'
+import type { AppPlatform, HaApi, NavigationTarget } from '@shared/ipc/api'
 import { IPC_CHANNELS } from '@shared/ipc/channels'
 import type { DownloadSnapshot, EnqueueDownloadInput } from '@shared/types/download'
 import type { EngineStatus } from '@shared/types/engine'
-import type { HistoryItem, LibrarySearchInput } from '@shared/types/history'
+import type { LibraryItem, LibrarySearchInput } from '@shared/types/history'
 import type { Result } from '@shared/types/result'
 import type { Settings, SettingsUpdate } from '@shared/types/settings'
 import { contextBridge, ipcRenderer } from 'electron'
@@ -49,7 +49,7 @@ const api: HaApi = {
     delete: (id, deleteFile) => invoke(IPC_CHANNELS.library.delete, { id, deleteFile }),
     list: () => invoke(IPC_CHANNELS.library.list),
     search: (input: LibrarySearchInput) => invoke(IPC_CHANNELS.library.search, input),
-    onUpdated: (listener) => subscribe<HistoryItem[]>(IPC_CHANNELS.library.updated, listener),
+    onUpdated: (listener) => subscribe<LibraryItem[]>(IPC_CHANNELS.library.updated, listener),
   },
   media: {
     cancelProbe: () => invoke(IPC_CHANNELS.media.cancelProbe),
@@ -57,6 +57,7 @@ const api: HaApi = {
   },
   settings: {
     get: () => invoke(IPC_CHANNELS.settings.get),
+    resetDownloadDir: () => invoke(IPC_CHANNELS.settings.resetDownloadDir),
     update: (update: SettingsUpdate) => invoke(IPC_CHANNELS.settings.update, update),
     onUpdated: (listener) => subscribe<Settings>(IPC_CHANNELS.settings.updated, listener),
   },
@@ -66,7 +67,9 @@ const api: HaApi = {
   },
   system: {
     getPlatform: platform,
+    getStartupNotices: () => invoke(IPC_CHANNELS.system.getStartupNotices),
     getVersion: () => invoke(IPC_CHANNELS.system.getVersion),
+    onNavigate: (listener) => subscribe<NavigationTarget>(IPC_CHANNELS.system.navigate, listener),
     openExternal: (url) => invoke(IPC_CHANNELS.system.openExternal, { url }),
   },
   window: {

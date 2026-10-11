@@ -28,6 +28,10 @@ export class QueueStore {
     this.#store.schedule({ schemaVersion: 1, jobs: [...structuredClone(jobs)] })
   }
 
+  get recoveredFromCorruption(): boolean {
+    return this.#store.recoveredFromCorruption
+  }
+
   flush(): Promise<void> {
     return this.#store.flush()
   }

@@ -2,7 +2,7 @@ import { access, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import type { DownloadJob } from '@shared/types/download'
-import type { HistoryItem, LibrarySearchInput } from '@shared/types/history'
+import type { HistoryItem, LibraryItem, LibrarySearchInput } from '@shared/types/history'
 import { z } from 'zod'
 
 import { JsonStore } from './json-store'
@@ -13,6 +13,7 @@ type HistoryDocument = z.infer<typeof HistorySchema>
 
 export class HistoryStore {
   readonly #store: JsonStore<HistoryDocument>
+  readonly #listeners = new Set<() => void>()
   #items: HistoryItem[] = []
 
   constructor(userData: string) {
@@ -31,9 +32,29 @@ export class HistoryStore {
     return structuredClone(this.#items)
   }
 
-  search(input: LibrarySearchInput): HistoryItem[] {
+  async listWithStatus(): Promise<LibraryItem[]> {
+    const items = this.list()
+    const result: LibraryItem[] = []
+    for (let index = 0; index < items.length; index += 32) {
+      const batch = items.slice(index, index + 32)
+      result.push(
+        ...(await Promise.all(
+          batch.map(async (item) => ({
+            ...item,
+            fileExists: await access(item.filePath).then(
+              () => true,
+              () => false,
+            ),
+          })),
+        )),
+      )
+    }
+    return result
+  }
+
+  async search(input: LibrarySearchInput): Promise<LibraryItem[]> {
     const query = input.query.trim().toLocaleLowerCase()
-    return this.list().filter((item) => {
+    return (await this.listWithStatus()).filter((item) => {
       const matchesKind = !input.kind || item.options.kind === input.kind
       const haystack = `${item.title} ${item.uploader ?? ''} ${item.platform}`.toLocaleLowerCase()
       return matchesKind && haystack.includes(query)
@@ -58,10 +79,11 @@ export class HistoryStore {
     }
     this.#items = [item, ...this.#items.filter(({ id }) => id !== item.id)].slice(0, 5_000)
     this.#store.schedule({ schemaVersion: 1, items: this.#items })
+    this.#emit()
     return item
   }
 
-  async delete(id: string, deleteFile: boolean): Promise<HistoryItem[]> {
+  async delete(id: string, deleteFile: boolean): Promise<LibraryItem[]> {
     const item = this.#items.find((candidate) => candidate.id === id)
     if (
       deleteFile &&
@@ -75,10 +97,24 @@ export class HistoryStore {
     }
     this.#items = this.#items.filter((candidate) => candidate.id !== id)
     this.#store.schedule({ schemaVersion: 1, items: this.#items })
-    return this.list()
+    this.#emit()
+    return this.listWithStatus()
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.#listeners.add(listener)
+    return () => this.#listeners.delete(listener)
+  }
+
+  get recoveredFromCorruption(): boolean {
+    return this.#store.recoveredFromCorruption
   }
 
   flush(): Promise<void> {
     return this.#store.flush()
+  }
+
+  #emit(): void {
+    for (const listener of this.#listeners) listener()
   }
 }
