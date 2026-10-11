@@ -16,12 +16,10 @@ import type { DownloadEngine, DownloadManagerHooks } from './contracts'
 import { completedJob, failedOrRetryJob } from './download-outcome'
 import { recoverJobs, transitionJob } from './job'
 
-type DesiredAction = 'pause' | 'cancel'
-
 export class DownloadManager {
   readonly #listeners = new Set<(snapshot: DownloadSnapshot) => void>()
   readonly #active = new Map<string, DownloadRun>()
-  readonly #desired = new Map<string, DesiredAction>()
+  readonly #desired = new Map<string, 'pause' | 'cancel'>()
   readonly #settling = new Map<string, Promise<void>>()
   readonly #recoveryIds = new Set<string>()
   #jobs: DownloadJob[] = []
@@ -38,7 +36,8 @@ export class DownloadManager {
 
   async initialize(maxConcurrent: number): Promise<DownloadSnapshot> {
     this.#maxConcurrent = maxConcurrent
-    const recovered = recoverJobs(await this.queue.load())
+    const persisted = (await this.queue.load()).filter((job) => job.state !== 'completed')
+    const recovered = recoverJobs(persisted)
     this.#jobs = recovered.jobs
     for (const id of recovered.recoveryIds) this.#recoveryIds.add(id)
     this.#changed(true)
@@ -49,7 +48,10 @@ export class DownloadManager {
     return {
       jobs: structuredClone(this.#jobs),
       activeCount: this.#active.size,
-      aggregateSpeedBps: this.#jobs.reduce((sum, job) => sum + (job.progress.speedBps ?? 0), 0),
+      aggregateSpeedBps: this.#jobs.reduce(
+        (sum, job) => (job.state === 'downloading' ? sum + (job.progress.speedBps ?? 0) : sum),
+        0,
+      ),
       recoveryCount: this.#recoveryIds.size,
     }
   }
@@ -210,9 +212,12 @@ export class DownloadManager {
       await cleanupJobPartials(job.outputDir, job.title, job.mediaId)
     } else if (result.ok) {
       const completed = completedJob(job, result.value.filePath)
-      await this.history.append(completed)
-      this.#replace(completed)
-      this.hooks.completed(completed)
+      const historyItem = await this.history.append(completed)
+      const withSize = historyItem
+        ? { ...completed, fileSizeBytes: historyItem.fileSize }
+        : completed
+      this.#replace(withSize)
+      this.hooks.completed(withSize)
     } else this.#replace(failedOrRetryJob(job, result.error))
     this.#changed(true)
     this.#pump()

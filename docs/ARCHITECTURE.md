@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the Phase 2 application boundary. The download engine, queue, persistence, and operating-system services are real and fully available through validated IPC; Phase 3 will add their user-facing controls.
+This document describes the Phase 3 application boundary. The main process owns the real engine and persisted data; the responsive Downloader and Queue consume only the narrow validated preload API.
 
 ## Process model
 
@@ -11,6 +11,8 @@ flowchart LR
   Window --> Preload[Sandboxed preload]
   Preload --> API[window.api]
   API --> Renderer[React renderer]
+  Renderer --> Mirrors[Normalized Zustand mirrors]
+  Mirrors --> Screens[Downloader / Queue]
   Main --> Logs[Local rotating logs]
   Main --> State[Validated window-state JSON]
   Main --> Manager[Download manager]
@@ -49,7 +51,9 @@ src/preload/index.d.ts            renderer global API declaration
 
 src/renderer/src/components/ui/   reusable accessible primitives
 src/renderer/src/components/shell title bar, tabs, controls, boundaries
-src/renderer/src/features/        lazy tab screens and dev-only UI kit
+src/renderer/src/features/        lazy screens, Downloader controller, Queue cards
+src/renderer/src/hooks/           lifecycle-safe application subscriptions
+src/renderer/src/store/           normalized downloads, settings, engine, navigation
 src/renderer/src/lib/copy.ts       renderer-visible English
 src/renderer/src/styles/index.css semantic tokens and global styles
 
@@ -100,17 +104,25 @@ strings.
 
 ## IPC contract
 
-| Channel                   | Direction       | Input         | Result                              |
-| ------------------------- | --------------- | ------------- | ----------------------------------- |
-| `system:get-version`      | renderer → main | `undefined`   | app version                         |
-| `system:open-external`    | renderer → main | `{ url }`     | success or allowlist error          |
-| `window:minimize`         | renderer → main | `undefined`   | success                             |
-| `window:toggle-maximize`  | renderer → main | `undefined`   | maximized state                     |
-| `window:is-maximized`     | renderer → main | `undefined`   | maximized state                     |
-| `window:close`            | renderer → main | `undefined`   | success before close                |
-| `window:maximize-changed` | main → renderer | boolean event | unsubscribe function in preload API |
+| Channel                   | Direction       | Input         | Result                               |
+| ------------------------- | --------------- | ------------- | ------------------------------------ |
+| `system:get-version`      | renderer → main | `undefined`   | app version                          |
+| `system:open-external`    | renderer → main | `{ url }`     | success or allowlist error           |
+| `window:minimize`         | renderer → main | `undefined`   | success                              |
+| `window:toggle-maximize`  | renderer → main | `undefined`   | maximized state                      |
+| `window:is-maximized`     | renderer → main | `undefined`   | maximized state                      |
+| `window:close`            | renderer → main | `undefined`   | success before close                 |
+| `window:maximize-changed` | main → renderer | boolean event | unsubscribe function in preload API  |
+| `engine:get-status`       | renderer → main | `undefined`   | real binary paths/versions/readiness |
+| `media:probe`             | renderer → main | `{ url }`     | normalized media metadata/formats    |
+| `media:cancel-probe`      | renderer → main | `undefined`   | cancels the current probe tree       |
+| `downloads:*`             | both directions | typed jobs    | snapshot/actions + batched events    |
+| `settings:*`              | both directions | typed updates | persisted settings + change events   |
+| `dialog:choose-folder`    | renderer → main | `undefined`   | selected path or cancel              |
+| `disk:get-free-bytes`     | renderer → main | `{ path }`    | available bytes                      |
+| `clipboard:write-text`    | renderer → main | `{ text }`    | completion-menu copy result          |
 
-Phase 2 adds domain methods under `window.api.engine`, `media`, `downloads`,
+Domain methods live under `window.api.engine`, `media`, `downloads`,
 `library`, `settings`, `dialog`, `shell`, and `clipboard`. Every request has a
 zod schema and every response is `Result<T, AppError>`. The only pushed events
 are engine status, batched download snapshots, library changes, settings
@@ -121,10 +133,11 @@ preloads and delegates to the same validated API.
 
 ```mermaid
 sequenceDiagram
-  participant UI as Renderer / dev console
+  participant UI as Downloader
   participant IPC as Validated IPC
   participant Probe as MediaProbeService
   participant Engine as writable yt-dlp
+  UI->>UI: debounce 250 ms / cancel stale probe
   UI->>IPC: media.probe(url)
   IPC->>IPC: zod + URL validation
   IPC->>Probe: normalized URL
@@ -152,6 +165,31 @@ sequenceDiagram
   Engine-->>Manager: exit
   Manager->>Store: persist terminal state
   Manager->>Store: append history on success
+  Manager-->>UI: completed path + actual file size
+```
+
+## Job state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> queued
+  queued --> starting
+  starting --> downloading
+  downloading --> processing
+  processing --> completed
+  starting --> paused
+  downloading --> paused
+  processing --> paused
+  paused --> queued: resume
+  queued --> canceled
+  starting --> canceled
+  downloading --> canceled
+  processing --> canceled
+  paused --> canceled
+  starting --> failed
+  downloading --> failed
+  processing --> failed
+  failed --> queued: retry
 ```
 
 ## Pause and recovery sequence
@@ -183,9 +221,23 @@ at 5,000 entries.
 
 ## Renderer state and rendering
 
-The shell owns only active-tab, visited-tab, and dev UI-kit state. Screens load through `React.lazy`; once visited they remain mounted and are hidden when inactive so future scroll and form state can survive tab changes. Shared copy and semantic styling keep later features consistent.
+The shell owns active-tab and visited-tab state. Screens load through
+`React.lazy`; once visited they remain mounted and are hidden when inactive so
+form and scroll state survive tab changes. One lifecycle hook hydrates the
+settings, engine, and download mirrors and unregisters every pushed IPC event
+on unmount.
 
-Zustand remains reserved for the Phase 3 renderer mirrors. Phase 2 intentionally leaves the visual status pill unchanged while the real status is available through IPC.
+The download mirror stores `orderedIds` separately from `jobsById` and reuses
+unchanged job objects. Each memoized card subscribes to its own job, so a 5 Hz
+progress sample updates the affected row rather than the entire list. Terminal
+jobs sort newest-first after active, queued, and paused work. List rows are
+solid and use `content-visibility`; progress animates by transform only.
+
+Downloader keeps transient URL/probe/options state local. It cancels stale
+main-process probes, derives quality availability and estimates from the real
+media formats, persists changed defaults through settings IPC, and sends a
+fully validated enqueue request. The title-bar engine pill is driven by the
+same live engine mirror.
 
 ## Window state
 

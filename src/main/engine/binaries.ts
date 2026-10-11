@@ -25,6 +25,17 @@ async function exists(path: string): Promise<boolean> {
   )
 }
 
+async function resourcesRoot(): Promise<string> {
+  if (app.isPackaged) return process.resourcesPath
+  const appRoot = app.getAppPath()
+  const candidates = [appRoot, join(appRoot, '..', '..'), process.cwd()]
+  for (const candidate of new Set(candidates)) {
+    const root = join(candidate, 'binaries')
+    if (await exists(root)) return root
+  }
+  return join(appRoot, 'binaries')
+}
+
 function firstVersionLine(output: string): string | undefined {
   return output
     .split(/\r?\n/u)
@@ -35,6 +46,7 @@ function firstVersionLine(output: string): string | undefined {
 export class BinaryService {
   readonly #runner: ProcessRunner
   #paths?: EnginePaths
+  #resolvedYtdlpVersion: string | undefined
   #status?: EngineStatus
   #statusError?: EngineStatus['error']
 
@@ -45,8 +57,10 @@ export class BinaryService {
   async initialize(): Promise<EngineStatus> {
     const paths = await this.#resolvePaths()
     this.#paths = paths
+    const resolvedYtdlpVersion = this.#resolvedYtdlpVersion
+    this.#resolvedYtdlpVersion = undefined
     const [ytdlpVersion, ffmpegVersion, ytdlpFound, ffmpegFound] = await Promise.all([
-      this.#probeYtdlp(),
+      resolvedYtdlpVersion ? Promise.resolve(resolvedYtdlpVersion) : this.#probeYtdlp(),
       this.#probeVersion(paths.ffmpeg, ['-version']),
       paths.testScript ? Promise.resolve(true) : exists(paths.ytdlp),
       exists(paths.ffmpeg),
@@ -62,13 +76,12 @@ export class BinaryService {
   }
 
   async #resolvePaths(): Promise<EnginePaths> {
-    const resourcesRoot = app.isPackaged
-      ? process.resourcesPath
-      : join(app.getAppPath(), 'binaries')
+    this.#resolvedYtdlpVersion = undefined
+    const binaryRoot = await resourcesRoot()
     const platformFolder = process.platform === 'win32' ? 'win' : 'macos'
     const suffix = process.platform === 'win32' ? '.exe' : ''
-    const bundledYtdlp = join(resourcesRoot, platformFolder, `yt-dlp${suffix}`)
-    const bundledFfmpeg = join(resourcesRoot, platformFolder, `ffmpeg${suffix}`)
+    const bundledYtdlp = join(binaryRoot, platformFolder, `yt-dlp${suffix}`)
+    const bundledFfmpeg = join(binaryRoot, platformFolder, `ffmpeg${suffix}`)
     const engineDir = join(app.getPath('userData'), 'engine')
     const installedYtdlp = join(engineDir, `yt-dlp${suffix}`)
     const ytdlpOverride = existingOverride('HA_YTDLP_PATH')
@@ -76,7 +89,8 @@ export class BinaryService {
     const testScript = app.isPackaged ? undefined : process.env.HA_TEST_ENGINE_SCRIPT
 
     await mkdir(engineDir, { recursive: true })
-    if (!ytdlpOverride && !testScript) await this.#installWritableCopy(bundledYtdlp, installedYtdlp)
+    if (!ytdlpOverride && !testScript)
+      this.#resolvedYtdlpVersion = await this.#installWritableCopy(bundledYtdlp, installedYtdlp)
     return {
       ytdlp: ytdlpOverride ?? (testScript ? process.execPath : installedYtdlp),
       ffmpeg: ffmpegOverride ?? bundledFfmpeg,
@@ -117,27 +131,29 @@ export class BinaryService {
   }
 
   async restoreBundledCopy(): Promise<void> {
-    const resourcesRoot = app.isPackaged
-      ? process.resourcesPath
-      : join(app.getAppPath(), 'binaries')
+    const binaryRoot = await resourcesRoot()
     const platformFolder = process.platform === 'win32' ? 'win' : 'macos'
     const suffix = process.platform === 'win32' ? '.exe' : ''
     await this.#copyExecutable(
-      join(resourcesRoot, platformFolder, `yt-dlp${suffix}`),
+      join(binaryRoot, platformFolder, `yt-dlp${suffix}`),
       join(app.getPath('userData'), 'engine', `yt-dlp${suffix}`),
     )
   }
 
-  async #installWritableCopy(source: string, destination: string): Promise<void> {
+  async #installWritableCopy(source: string, destination: string): Promise<string | undefined> {
+    if (!(await exists(destination))) {
+      await this.#copyExecutable(source, destination)
+      return undefined
+    }
     const [bundledVersion, installedVersion] = await Promise.all([
-      this.#probeVersion(source, ['--version']),
-      exists(destination).then((found) =>
-        found ? this.#probeVersion(destination, ['--version']) : undefined,
-      ),
+      this.#probeVersion(source, ['--version'], undefined, 45_000),
+      this.#probeVersion(destination, ['--version'], undefined, 45_000),
     ])
     if (!installedVersion || (bundledVersion && bundledVersion > installedVersion)) {
       await this.#copyExecutable(source, destination)
+      return bundledVersion
     }
+    return installedVersion
   }
 
   async #copyExecutable(source: string, destination: string): Promise<void> {
@@ -153,24 +169,30 @@ export class BinaryService {
   async #probeYtdlp(): Promise<string | undefined> {
     this.#statusError = undefined
     const invocation = this.ytdlpInvocation(['--version'])
-    const version = await this.#probeVersion(invocation.file, invocation.args, invocation.env)
+    const version = await this.#probeVersion(
+      invocation.file,
+      invocation.args,
+      invocation.env,
+      45_000,
+    )
     if (version || process.platform !== 'darwin' || this.paths.testScript || !this.#statusError)
       return version
     await this.#runner
       .run('codesign', ['--force', '--sign', '-', this.paths.ytdlp], { timeoutMs: 10_000 })
       .catch(() => undefined)
     this.#statusError = undefined
-    return this.#probeVersion(invocation.file, invocation.args, invocation.env)
+    return this.#probeVersion(invocation.file, invocation.args, invocation.env, 45_000)
   }
 
   async #probeVersion(
     file: string,
     args: readonly string[],
     env?: NodeJS.ProcessEnv,
+    timeoutMs = 10_000,
   ): Promise<string | undefined> {
     try {
       const result = await this.#runner.run(file, args, {
-        timeoutMs: 10_000,
+        timeoutMs,
         ...(env ? { env } : {}),
       })
       if (result.code === 0) return firstVersionLine(result.stdout || result.stderr)

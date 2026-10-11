@@ -22,8 +22,12 @@ function subscribe<T>(channel: string, listener: (value: T) => void): () => void
 }
 
 const api: HaApi = {
-  clipboard: { readUrl: () => invoke(IPC_CHANNELS.clipboard.readUrl) },
+  clipboard: {
+    readUrl: () => invoke(IPC_CHANNELS.clipboard.readUrl),
+    writeText: (text) => invoke(IPC_CHANNELS.clipboard.writeText, { text }),
+  },
   dialog: { chooseFolder: () => invoke(IPC_CHANNELS.dialog.chooseFolder) },
+  disk: { getFreeBytes: (path) => invoke(IPC_CHANNELS.disk.getFreeBytes, { path }) },
   downloads: {
     cancel: (id) => invoke(IPC_CHANNELS.downloads.cancel, { id }),
     clearCompleted: () => invoke(IPC_CHANNELS.downloads.clearCompleted),
@@ -47,7 +51,10 @@ const api: HaApi = {
     search: (input: LibrarySearchInput) => invoke(IPC_CHANNELS.library.search, input),
     onUpdated: (listener) => subscribe<HistoryItem[]>(IPC_CHANNELS.library.updated, listener),
   },
-  media: { probe: (url) => invoke(IPC_CHANNELS.media.probe, { url }) },
+  media: {
+    cancelProbe: () => invoke(IPC_CHANNELS.media.cancelProbe),
+    probe: (url) => invoke(IPC_CHANNELS.media.probe, { url }),
+  },
   settings: {
     get: () => invoke(IPC_CHANNELS.settings.get),
     update: (update: SettingsUpdate) => invoke(IPC_CHANNELS.settings.update, update),

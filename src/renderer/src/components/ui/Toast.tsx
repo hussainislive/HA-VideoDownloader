@@ -14,12 +14,18 @@ import {
 import { IconButton } from './IconButton'
 
 interface ToastItem {
+  action?: ToastAction
   id: number
   message: string
 }
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastContextValue {
-  showToast: (message: string) => void
+  showToast: (message: string, action?: ToastAction) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -35,9 +41,10 @@ export function ToastProvider({ children }: { children: ReactNode }): React.JSX.
     setToasts((current) => current.filter((toast) => toast.id !== id))
   }, [])
   const showToast = useCallback(
-    (message: string): void => {
+    (message: string, action?: ToastAction): void => {
       const id = ++nextToastId
-      setToasts((current) => [...current, { id, message }].slice(-3))
+      const item: ToastItem = { id, message, ...(action ? { action } : {}) }
+      setToasts((current) => [...current, item].slice(-3))
       timers.current.set(
         id,
         window.setTimeout(() => dismiss(id), 4_000),
@@ -68,7 +75,19 @@ export function ToastProvider({ children }: { children: ReactNode }): React.JSX.
             className="border-line-strong bg-surface-overlay text-fg-body shadow-card pointer-events-auto flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-xs"
             key={toast.id}
           >
-            <span>{toast.message}</span>
+            <span className="min-w-0 flex-1">{toast.message}</span>
+            {toast.action ? (
+              <button
+                className="text-accent hover:text-accent-glow shrink-0 font-semibold transition-colors"
+                onClick={() => {
+                  toast.action?.onClick()
+                  dismiss(toast.id)
+                }}
+                type="button"
+              >
+                {toast.action.label}
+              </button>
+            ) : null}
             <IconButton
               label={COPY.accessibility.dismissNotification}
               onClick={() => dismiss(toast.id)}

@@ -79,6 +79,7 @@ export const DownloadJobSchema = z.object({
     phase: z.enum(['queued', 'downloading', 'merging', 'converting', 'finalizing', 'completed']),
   }),
   filePath: z.string().optional(),
+  fileSizeBytes: z.number().nonnegative().optional(),
   error: AppErrorSchema.optional(),
   createdAt: z.string(),
   startedAt: z.string().optional(),

@@ -17,6 +17,7 @@ if (args.includes('-U')) {
   process.exit(0)
 }
 if (args.includes('-J')) {
+  if (url.includes('slow-probe')) await new Promise((resolve) => setTimeout(resolve, 2_000))
   if (url.includes('fail-403')) {
     process.stderr.write('ERROR: HTTP Error 403: Forbidden\n')
     process.exit(1)
@@ -109,7 +110,8 @@ if (url.includes('stall')) {
 }
 for (let step = 1; step <= 10 && !stopped; step += 1) {
   process.stdout.write(`HA|downloading|${step * 100}|1000|NA|500|${10 - step}|NA|NA\n`)
-  await new Promise((resolve) => setTimeout(resolve, url.includes('slow') ? 100 : 8))
+  const delay = url.includes('perf') ? 200 : url.includes('slow') ? 100 : 8
+  await new Promise((resolve) => setTimeout(resolve, delay))
 }
 process.stderr.write('[Merger] Merging formats into output\n')
 await writeFile(partPath, Buffer.alloc(2_048))

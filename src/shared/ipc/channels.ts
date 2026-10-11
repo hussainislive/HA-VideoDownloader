@@ -1,6 +1,7 @@
 export const IPC_CHANNELS = {
-  clipboard: { readUrl: 'clipboard:read-url' },
+  clipboard: { readUrl: 'clipboard:read-url', writeText: 'clipboard:write-text' },
   dialog: { chooseFolder: 'dialog:choose-folder' },
+  disk: { getFreeBytes: 'disk:get-free-bytes' },
   downloads: {
     cancel: 'downloads:cancel',
     clearCompleted: 'downloads:clear-completed',
@@ -23,7 +24,7 @@ export const IPC_CHANNELS = {
     search: 'library:search',
     updated: 'library:updated',
   },
-  media: { probe: 'media:probe' },
+  media: { cancelProbe: 'media:cancel-probe', probe: 'media:probe' },
   settings: {
     get: 'settings:get',
     update: 'settings:update',

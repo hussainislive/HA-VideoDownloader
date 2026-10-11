@@ -131,3 +131,14 @@ The main process records every engine progress sample but coalesces renderer
 snapshots on a 200 ms timer. State transitions still publish immediately.
 This keeps persistence and the future renderer responsive without losing final
 states, and gives all jobs one consistent snapshot boundary.
+
+## ADR-014 — Normalize renderer jobs by stable ID
+
+**Status:** Accepted · **Date:** 2026-10-11
+
+The renderer mirrors download snapshots as an ordered ID list plus a job map.
+Snapshot reconciliation preserves object identity for unchanged jobs, and each
+memoized Queue card selects only its own ID. This avoids an all-row render at
+every 5 Hz progress batch while keeping ordering and aggregate values in one
+authoritative store. A React Profiler regression verifies that changing one of
+two jobs produces one card update and zero updates for the untouched card.
