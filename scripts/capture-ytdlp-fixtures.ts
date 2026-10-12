@@ -8,8 +8,14 @@ interface Capture {
   stderr: string
 }
 
-const macFolder = process.arch === 'arm64' ? 'macos-arm64' : 'macos-x64'
-const binary = join(process.cwd(), 'binaries', macFolder, 'yt-dlp')
+const platformFolder =
+  process.platform === 'win32' ? 'win' : process.arch === 'arm64' ? 'macos-arm64' : 'macos-x64'
+const binary = join(
+  process.cwd(),
+  'binaries',
+  platformFolder,
+  process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp',
+)
 const destination = join(process.cwd(), 'tests/fixtures/ytdlp')
 const probes = [
   ['landscape.json', 'https://commons.wikimedia.org/wiki/File:Portraits-HD.webm'],

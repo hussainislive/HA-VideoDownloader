@@ -128,7 +128,7 @@ test.describe.serial('real bundled engine @live', () => {
     }
     await handle.kill()
     await handle.result
-    if (handle.pid)
+    if (process.platform === 'darwin' && handle.pid)
       expect((await new ProcessRunner().run('ps', ['-p', String(handle.pid)])).code).not.toBe(0)
     const resumedPath = await runDownload(resumeJob)
     expect((await stat(resumedPath)).size).toBe((await stat(videoPath)).size)

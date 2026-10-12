@@ -180,13 +180,22 @@ async function assertPeX64(path: string): Promise<void> {
 
 async function inspectWindowsBinaries(): Promise<string[]> {
   const folder = join(projectRoot, 'binaries', 'win')
-  const paths = [join(folder, 'yt-dlp.exe'), join(folder, 'ffmpeg.exe')]
+  const ytdlp = join(folder, 'yt-dlp.exe')
+  const ffmpeg = join(folder, 'ffmpeg.exe')
+  const paths = [ytdlp, ffmpeg]
   await Promise.all(paths.map(assertPeX64))
-  if (process.platform !== 'win32')
-    return paths.map(
-      (path) =>
-        `${path.slice(projectRoot.length + 1)}: PE32+ x86-64 · static check only — cannot execute on this host`,
-    )
+  if (process.platform !== 'win32') {
+    const staticStrings = await run('strings', ['-a', ffmpeg], 45_000)
+    if (staticStrings.code !== 0)
+      throw new Error(`Static Windows FFmpeg inspection failed: ${staticStrings.output.trim()}`)
+    const metadata = ffmpegMetadata(staticStrings.output)
+    return [
+      `${ytdlp.slice(projectRoot.length + 1)}: PE32+ x86-64 · static check only — cannot execute on this host`,
+      `${ffmpeg.slice(projectRoot.length + 1)}: PE32+ x86-64 · static check only — cannot execute on this host`,
+      `win/ffmpeg version: ${metadata.version}`,
+      `win/ffmpeg configure: ${metadata.configure}`,
+    ]
+  }
   const versions = await Promise.all(
     paths.map((path) =>
       run(path, [path.endsWith('ffmpeg.exe') ? '-version' : '--version'], 45_000),
@@ -195,10 +204,12 @@ async function inspectWindowsBinaries(): Promise<string[]> {
   versions.forEach((result, index) => {
     if (result.code !== 0) throw new Error(`${paths[index]} version probe failed`)
   })
-  return paths.map(
-    (path, index) =>
-      `${path.slice(projectRoot.length + 1)}: PE32+ x86-64 · ${versions[index]?.output.split(/\r?\n/u)[0] ?? 'unknown'}`,
-  )
+  const metadata = ffmpegMetadata(versions[1]?.output ?? '')
+  return [
+    `${ytdlp.slice(projectRoot.length + 1)}: PE32+ x86-64 · ${versions[0]?.output.split(/\r?\n/u)[0] ?? 'unknown'}`,
+    `${ffmpeg.slice(projectRoot.length + 1)}: PE32+ x86-64 · ${metadata.version}`,
+    `win/ffmpeg configure: ${metadata.configure}`,
+  ]
 }
 
 function sha256(path: string): Promise<string> {

@@ -1,6 +1,6 @@
 appId: com.hussainislive.havideodownloader
 productName: HA Premium Video Downloader
-copyright: Copyright © 2026 Hussain Ahmed
+copyright: Copyright © 2026 Hussain Ahmed — GNU GPL v3 or later
 directories:
   output: release
   buildResources: resources
@@ -23,11 +23,10 @@ mac:
       to: licenses/LICENSE
     - from: THIRD_PARTY_NOTICES.md
       to: licenses/THIRD_PARTY_NOTICES.md
+    - from: resources/icon.png
+      to: icon.png
   target:
     - target: dmg
-      arch:
-        - x64
-        - arm64
   category: public.app-category.video
   hardenedRuntime: false
   identity: null
@@ -53,10 +52,10 @@ win:
       to: licenses/LICENSE
     - from: THIRD_PARTY_NOTICES.md
       to: licenses/THIRD_PARTY_NOTICES.md
+    - from: resources/icon.png
+      to: icon.png
   target:
     - target: nsis
-      arch:
-        - x64
   icon: resources/icon.png
   artifactName: HA-Premium-Video-Downloader-${version}-win-${arch}.${ext}
 nsis:

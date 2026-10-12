@@ -10,6 +10,10 @@ export interface BundledBinaryPaths {
   ytdlp: string
 }
 
+export function packagedBinaryRoot(resourcesPath: string): string {
+  return join(resourcesPath, 'binaries')
+}
+
 export async function isAccessible(
   path: string,
   executable = process.platform !== 'win32',

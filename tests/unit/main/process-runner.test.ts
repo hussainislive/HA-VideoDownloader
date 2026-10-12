@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import { ProcessRunner } from '@main/engine/process-runner'
+import { ProcessRunner, windowsTaskkillPath } from '@main/engine/process-runner'
 import { describe, expect, it } from 'vitest'
 
 const worker = join(process.cwd(), 'tests/fixtures/process/worker.mjs')
@@ -42,5 +42,12 @@ describe('ProcessRunner', () => {
     expect(source).toContain('shell: false')
     expect(source.match(/windowsHide: true/gu)).toHaveLength(2)
     expect(source).not.toContain('shell: true')
+  })
+
+  it('resolves taskkill from the Windows system directory without a shell', () => {
+    expect(windowsTaskkillPath({ SystemRoot: 'C:\\Windows' })).toBe(
+      'C:\\Windows\\System32\\taskkill.exe',
+    )
+    expect(windowsTaskkillPath({})).toBe('taskkill.exe')
   })
 })

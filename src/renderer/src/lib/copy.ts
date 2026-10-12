@@ -210,8 +210,9 @@ export const COPY = {
     donateNote: 'Optional. The app stays free forever.',
     donate: 'Donate via PayPal',
     photoAlt: 'Hussain Ahmed',
+    licenses: 'Licenses & third-party notices',
     legal:
-      'Download only content you have the right to download. You are responsible for complying with the terms of the sites you use and with local copyright law.',
+      'Local utility for personal and educational use. Download only content you have the right to download.',
     footer: (version: string) =>
       `Made with care by Hussain · v${version} · Powered by yt-dlp and ffmpeg`,
   },

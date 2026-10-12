@@ -28,6 +28,10 @@ export default function AboutScreen(): React.JSX.Element {
     const result = await window.api.clipboard.writeText(DEVELOPER_EMAIL)
     showToast(result.ok ? COPY.about.emailCopied : result.error.message)
   }, [showToast])
+  const openLicenses = useCallback(async (): Promise<void> => {
+    const result = await window.api.system.openLicenses()
+    if (!result.ok) showToast(result.error.message)
+  }, [showToast])
 
   return (
     <div
@@ -51,6 +55,13 @@ export default function AboutScreen(): React.JSX.Element {
       <footer className="text-fg-muted flex shrink-0 flex-col items-center gap-0.5 text-center text-[9px] leading-3">
         <span>{COPY.about.footer(version)}</span>
         <span>{COPY.about.legal}</span>
+        <button
+          className="hover:text-accent focus-visible:text-accent underline-offset-2 hover:underline"
+          onClick={() => void openLicenses()}
+          type="button"
+        >
+          {COPY.about.licenses}
+        </button>
       </footer>
     </div>
   )

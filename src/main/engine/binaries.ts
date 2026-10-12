@@ -10,11 +10,12 @@ import {
   bundledBinaryPaths,
   isAccessible,
   missingBundledBinaries,
+  packagedBinaryRoot,
   resolveBundledBinaryPaths,
 } from './binary-resolver'
 import { ProcessRunner } from './process-runner'
 
-export { binaryFolderFor, resolveBundledBinaryPaths } from './binary-resolver'
+export { binaryFolderFor, packagedBinaryRoot, resolveBundledBinaryPaths } from './binary-resolver'
 
 export interface EnginePaths {
   ytdlp: string
@@ -31,7 +32,7 @@ async function exists(path: string, executable = process.platform !== 'win32'): 
 }
 
 async function resourcesRoot(): Promise<string> {
-  if (app.isPackaged) return process.resourcesPath
+  if (app.isPackaged) return packagedBinaryRoot(process.resourcesPath)
   const appRoot = app.getAppPath()
   const candidates = [appRoot, join(appRoot, '..', '..'), process.cwd()]
   for (const candidate of new Set(candidates)) {

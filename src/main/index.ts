@@ -4,8 +4,10 @@ import { registerIpc } from './ipc/register-ipc'
 import { publishMaximizeState } from './ipc/window'
 import { logger } from './logger'
 import { installApplicationMenu } from './menu'
+import { appIconPath } from './resources'
 import { installContentSecurityPolicy } from './security/csp'
 import { AppServices } from './services/app-services'
+import { copyDiagnosticInfo, openLicenseNotices, openLogsFolder } from './services/system-actions'
 import { activeDownloadCount, installCloseGuard } from './window/close-guard'
 import { createMainWindow } from './window/create-main-window'
 
@@ -28,10 +30,16 @@ if (!app.requestSingleInstanceLock()) {
   app
     .whenReady()
     .then(() => {
+      if (isDevelopment && process.platform === 'darwin') app.dock?.setIcon(appIconPath())
       installContentSecurityPolicy(session.defaultSession, isDevelopment)
-      installApplicationMenu(isDevelopment)
       mainWindow = createMainWindow()
-      services = new AppServices(() => mainWindow)
+      const appServices = new AppServices(() => mainWindow)
+      services = appServices
+      installApplicationMenu(isDevelopment, {
+        copyDiagnosticInfo: () => copyDiagnosticInfo(appServices),
+        openLicenses: openLicenseNotices,
+        openLogsFolder,
+      })
       registerIpc(() => mainWindow, services)
       publishMaximizeState(mainWindow)
       installCloseGuard(mainWindow, {

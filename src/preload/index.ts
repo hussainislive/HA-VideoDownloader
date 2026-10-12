@@ -66,11 +66,13 @@ const api: HaApi = {
     showInFolder: (path) => invoke(IPC_CHANNELS.shell.showInFolder, { path }),
   },
   system: {
+    copyDiagnosticInfo: () => invoke(IPC_CHANNELS.system.copyDiagnosticInfo),
     getPlatform: platform,
     getStartupNotices: () => invoke(IPC_CHANNELS.system.getStartupNotices),
     getVersion: () => invoke(IPC_CHANNELS.system.getVersion),
     onNavigate: (listener) => subscribe<NavigationTarget>(IPC_CHANNELS.system.navigate, listener),
     openExternal: (url) => invoke(IPC_CHANNELS.system.openExternal, { url }),
+    openLicenses: () => invoke(IPC_CHANNELS.system.openLicenses),
   },
   window: {
     close: () => invoke(IPC_CHANNELS.window.close),

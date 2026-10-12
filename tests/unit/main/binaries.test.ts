@@ -1,11 +1,21 @@
 import { join } from 'node:path'
 
-import { binaryFolderFor, resolveBundledBinaryPaths } from '@main/engine/binaries'
+import {
+  binaryFolderFor,
+  packagedBinaryRoot,
+  resolveBundledBinaryPaths,
+} from '@main/engine/binaries'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 describe('architecture-specific binary resolution', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+  })
+
+  it('resolves packaged binaries below the resources binaries directory', () => {
+    expect(packagedBinaryRoot('/Applications/HA.app/Contents/Resources')).toBe(
+      '/Applications/HA.app/Contents/Resources/binaries',
+    )
   })
 
   it('selects the native Apple Silicon folder from process.arch', async () => {

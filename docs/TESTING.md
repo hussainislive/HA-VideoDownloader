@@ -12,17 +12,19 @@ This is the definition-of-done gate. It runs strict TypeScript checks, ESLint wi
 
 ## Focused commands
 
-| Command                   | Purpose                                                                      |
-| ------------------------- | ---------------------------------------------------------------------------- |
-| `npm run typecheck`       | Check node/preload and renderer TypeScript projects                          |
-| `npm run lint`            | Enforce correctness, a11y, imports, hooks, and component color rules         |
-| `npm run format:check`    | Verify repository formatting                                                 |
-| `npm test`                | Run unit and component tests once                                            |
-| `npm run test:watch`      | Run Vitest in watch mode                                                     |
-| `npm run test:coverage`   | Generate V8 coverage                                                         |
-| `npm run test:e2e`        | Verify binaries, build, and run non-live Electron tests                      |
-| `npm run test:e2e:live`   | Run opt-in tests tagged `@live`                                              |
-| `npm run verify:binaries` | Check presence, versions, architecture, permissions, and macOS signing state |
+| Command                        | Purpose                                                                      |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| `npm run typecheck`            | Check node/preload and renderer TypeScript projects                          |
+| `npm run lint`                 | Enforce correctness, a11y, imports, hooks, and component color rules         |
+| `npm run format:check`         | Verify repository formatting                                                 |
+| `npm test`                     | Run unit and component tests once                                            |
+| `npm run test:watch`           | Run Vitest in watch mode                                                     |
+| `npm run test:coverage`        | Generate V8 coverage                                                         |
+| `npm run test:e2e`             | Verify binaries, build, and run non-live Electron tests                      |
+| `npm run test:e2e:live`        | Run opt-in tests tagged `@live`                                              |
+| `npm run test:e2e:performance` | Measure startup, resources, 5,000 rows, and optional soak                    |
+| `npm run verify:binaries`      | Check presence, versions, architecture, permissions, and macOS signing state |
+| `npm run verify:bundle`        | Enforce the 350 KiB gzip renderer-JavaScript budget after a build            |
 
 ## Unit and integration coverage
 
@@ -49,6 +51,11 @@ Phase 4 unit and integration tests additionally cover:
 - Library search across title, uploader, and platform plus all sort/filter modes and Unicode-safe matching;
 - settings schema-v1 migration, corrupt-settings quarantine/default restoration, and persisted keep-on-top state;
 - batched missing-file status, history-only deletion, optional file deletion, close-guard active-state counting, and the download-manager shutdown path.
+
+Phase 5 unit and integration tests additionally cover architecture-specific
+binary resolution, missing native inputs, Windows system `taskkill` resolution,
+reserved/trailing/Unicode filenames, redacted diagnostics, recursive log
+redaction, and the one-source icon/package verifiers.
 
 Phase 2 unit and integration tests additionally cover:
 
@@ -88,10 +95,10 @@ Phase 4 Electron E2E additionally covers:
 - axe checks on populated Library, Settings, and About states plus the existing all-five-screen shell pass;
 - reviewed visual baselines for every screen at 850×600, 1280×800, and 1920×1080, with explicit root and main-content horizontal-overflow assertions.
 
-The completed Phase 4 gate contains 94 passing Vitest tests across 24 files and
-32 passing deterministic Electron E2E tests. Live coverage is intentionally
-separate and is not required for Phase 4 because no engine argument or process
-execution behavior changed.
+The final Phase 5 gate contains 105 passing Vitest tests across 28 files. Its
+deterministic Electron E2E count is recorded in `docs/PROGRESS.md` after the
+final full run. Five separate live tests exercise four engine paths and one
+complete UI path with the real bundled tools.
 
 axe uses its documented legacy aggregation mode because Playwright's default blank-page aggregator cannot create a second target through Electron automation. The application has no frames, so cross-origin frame coverage is not lost.
 
@@ -146,21 +153,38 @@ was separately executed with `--version` and remains accepted. `--print
 after_move:HAFILE|%(filepath)s` with `--no-simulate` emitted the final path in
 both deterministic and live downloads.
 
+## Performance and soak
+
+`npm run test:e2e:performance` records JSON under `test-results/` and runs the
+short startup/resource/5,000-row checks. The release-only soak is enabled with:
+
+```sh
+HA_PERFORMANCE_SOAK=1 npm run test:e2e:performance
+```
+
+The soak runs repeated groups of three deterministic short downloads for 30
+minutes, removes completed queue/history entries between batches, and compares
+the app processes' final working set with the post-warmup baseline. Measured
+release results and documented Intel deviations live in `docs/PERFORMANCE.md`.
+
 ## Packaging smoke
 
-Phase 1 packaging verification is:
+Release packaging verification is:
 
 ```sh
 npm run dist:mac
 ```
 
-After each build, inspect executable bits, architecture, and ad-hoc signatures
-under the app's target-specific `Contents/Resources/binaries/macos-x64` or
-`macos-arm64` directory. Mount and launch the x64 DMG with an isolated temporary
-profile, wait for “Downloader workspace,” close it, and detach the image. The
-arm64 application and engine receive static checks on the Intel host and must
-be executed later on Apple Silicon. Windows packaging and runtime behavior are
-verified on Windows.
+After each build, the package verifier inspects executable bits, architecture,
+ad-hoc signatures, bundled licenses, and the icon under the app's
+target-specific `Contents/Resources/binaries/macos-x64` or `macos-arm64`
+directory. `npm run smoke:package:mac:x64` mounts the x64 DMG read-only with an
+isolated temporary profile, launches it, waits for the real Engine Ready state,
+verifies v1.0.0 on About, closes it, and detaches the image. This caught and now
+regression-tests an incorrect packaged binary root that a static inspection
+could not reveal. The arm64 application and engine receive static checks on the
+Intel host and must be executed later on Apple Silicon. Windows packaging and
+runtime behavior are verified on Windows.
 
 ## Updating visual snapshots
 

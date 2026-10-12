@@ -11,7 +11,7 @@ import { useLibraryStore } from '@renderer/store/library-store'
 import { navigateToTab } from '@renderer/store/ui-store'
 import type { LibraryItem } from '@shared/types/history'
 import { FolderClock, Search, SearchX } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { LibraryList } from './components/LibraryList'
 import { type LibraryFilter, type LibrarySort, queryLibrary } from './library-query'
@@ -30,21 +30,15 @@ export default function LibraryScreen(): React.JSX.Element {
   const hydration = useLibraryStore((state) => state.hydration)
   const error = useLibraryStore((state) => state.error)
   const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [filter, setFilter] = useState<LibraryFilter>('all')
   const [sort, setSort] = useState<LibrarySort>('newest')
   const [pendingDelete, setPendingDelete] = useState<LibraryItem>()
   const [deleteFile, setDeleteFile] = useState(false)
   const { showToast } = useToast()
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDebouncedQuery(query), 150)
-    return () => window.clearTimeout(timer)
-  }, [query])
-
   const visibleItems = useMemo(
-    () => queryLibrary(items, { filter, query: debouncedQuery, sort }),
-    [debouncedQuery, filter, items, sort],
+    () => queryLibrary(items, { filter, query, sort }),
+    [filter, items, query, sort],
   )
   const counts = useMemo(
     () => ({
@@ -94,7 +88,7 @@ export default function LibraryScreen(): React.JSX.Element {
   }, [deleteFile, pendingDelete, showToast])
 
   const totalBytes = items.reduce((sum, item) => sum + item.fileSize, 0)
-  const hasQuery = debouncedQuery.trim().length > 0 || filter !== 'all'
+  const hasQuery = query.trim().length > 0 || filter !== 'all'
 
   return (
     <div
@@ -152,7 +146,7 @@ export default function LibraryScreen(): React.JSX.Element {
         <EmptyState
           description={COPY.library.noResultsDescription}
           icon={SearchX}
-          title={COPY.library.noResults(debouncedQuery.trim())}
+          title={COPY.library.noResults(query.trim())}
         />
       ) : (
         <EmptyState

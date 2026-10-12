@@ -178,3 +178,52 @@ the arm64 artifact genuinely native while retaining bad-architecture detection
 as a safety net for x64 builds run through Rosetta. The Intel development host
 can build and statically inspect arm64, but execution remains an explicit Apple
 Silicon verification item.
+
+## ADR-018 — Release the application under GPL-3.0-or-later
+
+**Status:** Accepted · **Date:** 2026-10-12
+
+The owner selected GNU GPL version 3, and the repository uses the
+`GPL-3.0-or-later` SPDX expression. The official GPLv3 text replaces the Phase 1
+placeholder; packaged copies include it beside a complete runtime and engine
+notice. “Or later” preserves the Free Software Foundation's upgrade option and
+matches the owner's addendum default. Bundled yt-dlp remains under the
+Unlicense, fonts remain under OFL-1.1, and FFmpeg's GPL-enabled distributions
+retain their own corresponding-source obligations.
+
+## ADR-019 — Keep v1 releases manual and native-host verified
+
+**Status:** Accepted · **Date:** 2026-10-12
+
+Version 1 releases use a documented manual checklist instead of CI. The Intel
+Mac builds both macOS architectures and can execute only the x64 artifact; the
+arm64 bundle receives static architecture, dependency, permission, and signing
+checks before a physical Apple Silicon smoke. Windows installers are built and
+tested only on Windows. A draft release cannot be published until both external
+hardware guides and artifact checksums are complete.
+
+## ADR-020 — Expose redacted diagnostics through narrow native actions
+
+**Status:** Accepted · **Date:** 2026-10-12
+
+Help can copy a bounded diagnostic report containing app, OS, architecture,
+engine readiness/versions/paths, and recent error codes, with home-directory
+paths redacted. It can also reveal the local rotating-log folder and open the
+packaged license notice. The renderer receives only explicit validated actions;
+it never receives log contents or arbitrary shell access. Log values recursively
+redact media URLs, home paths, nested errors, and circular objects.
+
+## ADR-021 — Record Intel performance as a conservative baseline
+
+**Status:** Accepted · **Date:** 2026-10-12
+
+The release performance suite reports every specification target, while the
+2019 Intel Mac uses the addendum's relaxed 2.0-second shown and 3.0-second
+interactive startup limits. Its 300 MB Electron working-set target is retained
+as a visible target rather than rewritten to match the result; an automated
+500 MB ceiling catches material regressions on this host, and the measured miss
+is documented. The renderer JavaScript budget is enforced at 350 KiB gzip.
+Library search is immediate, filesystem status checks happen only after main-
+process filtering, and scrolling overlays use solid surfaces to avoid list-row
+blur. Future hardware baselines must be recorded separately rather than
+silently replacing these measurements.

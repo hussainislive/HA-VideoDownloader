@@ -30,4 +30,14 @@ describe('main process helpers', () => {
     )
     await rm(directory, { recursive: true, force: true })
   })
+
+  it('sanitizes reserved Windows names, trailing dots, and long Unicode titles', () => {
+    expect(safeFilenameStem('CON', 'one')).toBe('_CON [one]')
+    expect(safeFilenameStem('nul.txt', 'two')).toBe('_nul.txt [two]')
+    expect(safeFilenameStem('report...   ', 'three')).toBe('report [three]')
+    const unicodeStem = safeFilenameStem('فيديو 🎬'.repeat(100), 'unicode')
+    expect(unicodeStem).toContain('[unicode]')
+    expect([...unicodeStem].length).toBeLessThanOrEqual(190)
+    expect(unicodeStem).not.toContain('\uFFFD')
+  })
 })

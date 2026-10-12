@@ -6,8 +6,18 @@ import { app, ipcMain, shell } from 'electron'
 import { logger } from '../logger'
 import { isAllowedExternalUrl } from '../security/external-url'
 import type { AppServices } from '../services/app-services'
+import { copyDiagnosticInfo, openLicenseNotices } from '../services/system-actions'
 
 export function registerSystemIpc(services: AppServices): void {
+  ipcMain.handle(IPC_CHANNELS.system.copyDiagnosticInfo, async (_event, input) => {
+    if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
+    return runSystemAction(
+      () => copyDiagnosticInfo(services),
+      'Unable to copy diagnostic information',
+      'Diagnostic information could not be copied.',
+    )
+  })
+
   ipcMain.handle(IPC_CHANNELS.system.getStartupNotices, async (_event, input) => {
     if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
     try {
@@ -32,6 +42,15 @@ export function registerSystemIpc(services: AppServices): void {
       })
     }
     return ok(app.getVersion())
+  })
+
+  ipcMain.handle(IPC_CHANNELS.system.openLicenses, async (_event, input) => {
+    if (!EmptyInputSchema.safeParse(input).success) return invalidRequest()
+    return runSystemAction(
+      openLicenseNotices,
+      'Unable to open license notices',
+      'The license notices could not be opened.',
+    )
   })
 
   ipcMain.handle(
@@ -65,6 +84,24 @@ export function registerSystemIpc(services: AppServices): void {
       }
     },
   )
+}
+
+async function runSystemAction(
+  action: () => Promise<void>,
+  logMessage: string,
+  userMessage: string,
+): Promise<Result<undefined>> {
+  try {
+    await action()
+    return ok(undefined)
+  } catch (error) {
+    logger.error(logMessage, error)
+    return err({
+      code: 'SYSTEM_ACTION_FAILED',
+      message: userMessage,
+      retryable: true,
+    })
+  }
 }
 
 function invalidRequest(): Result<never> {

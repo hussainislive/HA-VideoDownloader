@@ -36,9 +36,11 @@ export const IPC_CHANNELS = {
     showInFolder: 'shell:show-in-folder',
   },
   system: {
+    copyDiagnosticInfo: 'system:copy-diagnostic-info',
     getStartupNotices: 'system:get-startup-notices',
     getVersion: 'system:get-version',
     navigate: 'system:navigate',
+    openLicenses: 'system:open-licenses',
     openExternal: 'system:open-external',
   },
   window: {
