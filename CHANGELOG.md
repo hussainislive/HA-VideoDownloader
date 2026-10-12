@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file. The format 
 - One verified app-icon source for packages, windows, development Dock display, and notifications.
 - Redacted Help diagnostics, local-log access, packaged GPL and third-party notices, and an About licenses action.
 - Release QA, Apple Silicon, Windows, icon, security, contribution, public-repository, manual-release, and 1.0 release-note documentation.
-- Automated renderer bundle budget plus Intel-host startup, CPU, memory, 5,000-row Library, frame-rate, and 30-minute soak measurements.
+- Automated renderer bundle budget plus finite Intel-host startup, CPU, memory, 5,000-row Library, and frame-rate measurements.
 - Windows-safe taskkill resolution, reserved-filename handling, locked-partial retries, line-ending policy, and guarded platform-only tests/scripts.
 
 ### Changed

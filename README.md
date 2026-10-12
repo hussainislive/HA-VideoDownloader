@@ -151,7 +151,7 @@ npm test             # unit and component tests
 npm run test:e2e     # production build + deterministic Electron tests
 npm run check        # complete required quality gate
 npm run test:e2e:live # opt-in real-engine tests; introduced in Phase 2
-npm run test:e2e:performance # release performance suite; soak is opt-in
+npm run test:e2e:performance # finite release performance suite
 ```
 
 Electron E2E drives the complete visual flow with real IPC and filesystem output, including progress, completion, pause/resume/cancel, retry, audio extraction, accessibility, responsive snapshots, and recovery. Opt-in macOS live tests include a real end-to-end UI download using the bundled tools and a documented Creative Commons fixture. More detail is in [`docs/TESTING.md`](docs/TESTING.md).

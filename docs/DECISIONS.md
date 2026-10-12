@@ -227,3 +227,14 @@ Library search is immediate, filesystem status checks happen only after main-
 process filtering, and scrolling overlays use solid surfaces to avoid list-row
 blur. Future hardware baselines must be recorded separately rather than
 silently replacing these measurements.
+
+## ADR-022 — Remove the repeated-download soak from release gates
+
+**Status:** Accepted · **Date:** 2026-10-12
+
+The owner removed the 30-minute fake-download soak and its 10% memory-growth
+threshold from Phase 5 and future release gates after the test completed 2,793
+fake downloads in one run and repeatedly surfaced the application window. The
+one measured result remains documented for transparency, but it is not a
+release blocker. Finite startup, idle/active resource, frame-rate, 5,000-row,
+live-engine, and regression checks remain required.

@@ -6,7 +6,7 @@ Releases are intentionally manual in v1. No CI workflow publishes artifacts.
 
 1. Complete `docs/QA-CHECKLIST.md`, including Apple Silicon and Windows guides.
 2. Run `npm ci`, `npm run verify:binaries`, `npm run check`,
-   `npm run test:e2e:live`, the performance/soak checks, and `npm audit`.
+   `npm run test:e2e:live`, the finite performance checks, and `npm audit`.
 3. Confirm zero high/critical advisories and review any remaining lower-severity
    development-only findings.
 4. Confirm and verify the owner-supplied final icon. Recheck GPL notices, the disclaimer,

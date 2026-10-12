@@ -22,7 +22,7 @@ This is the definition-of-done gate. It runs strict TypeScript checks, ESLint wi
 | `npm run test:coverage`        | Generate V8 coverage                                                         |
 | `npm run test:e2e`             | Verify binaries, build, and run non-live Electron tests                      |
 | `npm run test:e2e:live`        | Run opt-in tests tagged `@live`                                              |
-| `npm run test:e2e:performance` | Measure startup, resources, 5,000 rows, and optional soak                    |
+| `npm run test:e2e:performance` | Measure startup, resources, and the 5,000-row Library                        |
 | `npm run verify:binaries`      | Check presence, versions, architecture, permissions, and macOS signing state |
 | `npm run verify:bundle`        | Enforce the 350 KiB gzip renderer-JavaScript budget after a build            |
 
@@ -95,10 +95,9 @@ Phase 4 Electron E2E additionally covers:
 - axe checks on populated Library, Settings, and About states plus the existing all-five-screen shell pass;
 - reviewed visual baselines for every screen at 850×600, 1280×800, and 1920×1080, with explicit root and main-content horizontal-overflow assertions.
 
-The final Phase 5 gate contains 105 passing Vitest tests across 28 files. Its
-deterministic Electron E2E count is recorded in `docs/PROGRESS.md` after the
-final full run. Five separate live tests exercise four engine paths and one
-complete UI path with the real bundled tools.
+The final Phase 5 gate contains 106 passing Vitest tests across 28 files and 33
+passing deterministic Electron E2E tests. Five separate live tests exercise
+four engine paths and one complete UI path with the real bundled tools.
 
 axe uses its documented legacy aggregation mode because Playwright's default blank-page aggregator cannot create a second target through Electron automation. The application has no frames, so cross-origin frame coverage is not lost.
 
@@ -153,19 +152,11 @@ was separately executed with `--version` and remains accepted. `--print
 after_move:HAFILE|%(filepath)s` with `--no-simulate` emitted the final path in
 both deterministic and live downloads.
 
-## Performance and soak
+## Performance
 
 `npm run test:e2e:performance` records JSON under `test-results/` and runs the
-short startup/resource/5,000-row checks. The release-only soak is enabled with:
-
-```sh
-HA_PERFORMANCE_SOAK=1 npm run test:e2e:performance
-```
-
-The soak runs repeated groups of three deterministic short downloads for 30
-minutes, removes completed queue/history entries between batches, and compares
-the app processes' final working set with the post-warmup baseline. Measured
-release results and documented Intel deviations live in `docs/PERFORMANCE.md`.
+finite startup, resource, live-progress, and 5,000-row checks. Measured release
+results and documented Intel deviations live in `docs/PERFORMANCE.md`.
 
 ## Packaging smoke
 

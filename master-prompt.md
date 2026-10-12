@@ -681,7 +681,7 @@ Five phases, executed one at a time on the owner's command. Each lists **Goal �
 7. **Packaging** (section 13): electron-builder config finalized, icons, DMG (x64 + arm64) and NSIS (x64), version stamping, `THIRD_PARTY_NOTICES.md` completed from real dependency licenses (use `license-checker`-style tooling), build artifacts named `HA-Premium-Video-Downloader-<version>-<os>-<arch>.<ext>`, smoke-install test of the produced artifacts.
 8. **Release docs:** final README (section 14.1 complete, screenshots/GIFs, install instructions per OS, troubleshooting, FAQ, roadmap), `CONTRIBUTING.md`, `docs/QA-CHECKLIST.md` (manual matrix: macOS arm64, macOS x64, Windows 10, Windows 11 × flows), `CHANGELOG.md` v1.0.0 section, GitHub release notes draft in `docs/RELEASE-NOTES-1.0.0.md`, issue templates (`.github/ISSUE_TEMPLATE/*`), optional CI workflow (`.github/workflows/ci.yml`) that runs lint/typecheck/unit/e2e(fake engine) on macOS and Windows runners — binaries are fetched in CI from official release URLs with checksum verification, never committed.
 
-**Tests:** the whole pyramid; 30-minute soak test (script enqueues repeated short downloads with the fake engine; memory must not grow > 10% after warmup); chaos tests (kill engine mid-merge, remove network, fill disk simulation, corrupt JSON); visual snapshots all screens at 3 sizes.
+**Tests:** the whole pyramid; chaos tests (kill engine mid-merge, remove network, fill disk simulation, corrupt JSON); visual snapshots all screens at 3 sizes.
 
 **DoD:** `npm run check` green; `dist:mac` and `dist:win` produce installable artifacts (`dist:win` may be produced on macOS only if the toolchain allows; otherwise on the owner's Windows machine or CI — state clearly what was and wasn't verified); performance budgets met or deviations documented; zero high/critical audit findings; docs complete; the Phase 5 report includes a **release checklist** with every item marked verified / needs-owner-verification.
 
@@ -768,7 +768,7 @@ No `console.*` in `src/` (use the logger); no color literals in components; no d
 |---|---|
 | Cold start → window shown | ≤ 1.0 s on Apple Silicon; ≤ 2.0 s on a mid-range Windows laptop |
 | Cold start → interactive (URL input focusable) | ≤ 1.5 s / ≤ 2.5 s |
-| Idle memory (all processes) | ≤ 300 MB; no growth > 10% over a 30-minute soak |
+| Idle memory (all processes) | ≤ 300 MB |
 | Idle CPU | < 1% |
 | CPU with 3 active downloads | < 15% of one core for the app itself (yt-dlp/ffmpeg excluded) |
 | UI frame rate during tab change and with 3 live progress bars | ≥ 55 fps |

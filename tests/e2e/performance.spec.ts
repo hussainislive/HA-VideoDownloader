@@ -92,36 +92,6 @@ test.describe.serial('Phase 5 performance @performance', () => {
     expect(frames).toBeGreaterThanOrEqual(55)
     expect(searchMs).toBeLessThan(100)
   })
-
-  test('holds memory growth below ten percent over a 30-minute soak', async () => {
-    test.skip(process.env.HA_PERFORMANCE_SOAK !== '1', 'Set HA_PERFORMANCE_SOAK=1 for release soak')
-    test.setTimeout(31 * 60 * 1_000)
-    launched = await launchElectronApp({
-      env: { HA_TEST_ENGINE_SCRIPT: fakeEngine },
-      settings: { autoPasteClipboard: false, maxConcurrent: 3 },
-    })
-    const startedAt = Date.now()
-    const warmupEndsAt = startedAt + 60_000
-    const soakEndsAt = startedAt + 30 * 60_000
-    let batch = 0
-    while (Date.now() < warmupEndsAt) await runSoakBatch(launched, batch++)
-    await wait(launched.page, 2_000)
-    const baseline = await resourceSample(launched.app)
-    let nextReportAt = Date.now() + 5 * 60_000
-    while (Date.now() < soakEndsAt) {
-      await runSoakBatch(launched, batch++)
-      if (Date.now() >= nextReportAt) {
-        const sample = await resourceSample(launched.app)
-        process.stdout.write(`SOAK ${(Date.now() - startedAt) / 60_000}m ${sample.memoryMb}MB\n`)
-        nextReportAt += 5 * 60_000
-      }
-    }
-    await wait(launched.page, 5_000)
-    const final = await resourceSample(launched.app)
-    const growthPercent = ((final.memoryMb - baseline.memoryMb) / baseline.memoryMb) * 100
-    results.soak = { baseline, batches: batch, final, growthPercent, minutes: 30 }
-    expect(growthPercent).toBeLessThanOrEqual(10)
-  })
 })
 
 async function resourceSample(
@@ -172,30 +142,6 @@ async function enqueueBatch(page: Page, userData: string, label: string): Promis
     },
     { dirs: directories, url: label },
   )
-}
-
-async function runSoakBatch(current: LaunchedApp, batch: number): Promise<void> {
-  await enqueueBatch(current.page, current.userData, `slow-soak-${batch}`)
-  await expect
-    .poll(
-      async () => {
-        const result = await current.page.evaluate(() => window.api.downloads.list())
-        return result.ok
-          ? result.value.jobs.filter((job) =>
-              ['queued', 'starting', 'downloading', 'processing'].includes(job.state),
-            ).length
-          : -1
-      },
-      { timeout: 15_000 },
-    )
-    .toBe(0)
-  const histories = await current.page.evaluate(() => window.api.library.list())
-  if (histories.ok) {
-    for (const item of histories.value) {
-      await current.page.evaluate((id) => window.api.library.delete(id, false), item.id)
-    }
-  }
-  await current.page.evaluate(() => window.api.downloads.clearCompleted())
 }
 
 async function animationFrames(page: Page, locator = page.locator('body')): Promise<number> {

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 import { firstHttpUrl } from '@main/services/clipboard'
 import { cleanupJobPartials, safeFilenameStem } from '@main/services/filename'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 describe('main process helpers', () => {
   it('extracts the first http URL from clipboard text', () => {
@@ -39,5 +39,22 @@ describe('main process helpers', () => {
     expect(unicodeStem).toContain('[unicode]')
     expect([...unicodeStem].length).toBeLessThanOrEqual(190)
     expect(unicodeStem).not.toContain('\uFFFD')
+  })
+
+  it('retries a partial deletion while Windows still holds the file lock', async () => {
+    const directory = join(tmpdir(), `ha-locked-files-${Date.now()}`)
+    const partial = 'Locked [abc].mp4.part'
+    await mkdir(directory)
+    await writeFile(join(directory, partial), 'partial')
+    const locked = Object.assign(new Error('file is locked'), { code: 'EBUSY' })
+    const removeFile = vi
+      .fn<(path: string) => Promise<void>>()
+      .mockRejectedValueOnce(locked)
+      .mockRejectedValueOnce(locked)
+      .mockResolvedValue(undefined)
+
+    expect(await cleanupJobPartials(directory, 'Locked', 'abc', removeFile)).toEqual([partial])
+    expect(removeFile).toHaveBeenCalledTimes(3)
+    await rm(directory, { recursive: true, force: true })
   })
 })

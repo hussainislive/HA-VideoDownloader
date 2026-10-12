@@ -5,6 +5,7 @@ const WINDOWS_RESERVED_NAME = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu
 const RETRIABLE_LOCK_CODES = new Set(['EBUSY', 'EPERM'])
 const FILE_UNLOCK_RETRIES = 5
 const FILE_UNLOCK_RETRY_MS = 50
+type RemoveFile = (path: string) => Promise<void>
 
 export function safeFilenameStem(title: string, mediaId: string): string {
   const cleanedTitle = [...title]
@@ -32,10 +33,10 @@ function isRetriableLock(error: unknown): boolean {
   )
 }
 
-async function removeAfterUnlock(path: string): Promise<void> {
+async function removeAfterUnlock(path: string, removeFile: RemoveFile): Promise<void> {
   for (let attempt = 0; attempt <= FILE_UNLOCK_RETRIES; attempt += 1) {
     try {
-      await rm(path, { force: true })
+      await removeFile(path)
       return
     } catch (error) {
       if (!isRetriableLock(error) || attempt === FILE_UNLOCK_RETRIES) throw error
@@ -48,6 +49,7 @@ export async function cleanupJobPartials(
   outputDir: string,
   title: string,
   mediaId: string,
+  removeFile: RemoveFile = (path) => rm(path, { force: true }),
 ): Promise<string[]> {
   const stem = safeFilenameStem(title, mediaId)
   const names = await readdir(outputDir).catch(() => [])
@@ -61,6 +63,6 @@ export async function cleanupJobPartials(
       /\.f\d+\./u.test(name)
     )
   })
-  await Promise.all(candidates.map((name) => removeAfterUnlock(join(outputDir, name))))
+  await Promise.all(candidates.map((name) => removeAfterUnlock(join(outputDir, name), removeFile)))
   return candidates
 }
