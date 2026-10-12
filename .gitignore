@@ -12,7 +12,6 @@ blob-report/
 .env.*
 !.env.example
 
-binaries/macos/*
 binaries/macos-arm64/*
 binaries/macos-x64/*
 binaries/win/*

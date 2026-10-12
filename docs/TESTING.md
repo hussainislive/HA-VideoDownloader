@@ -154,7 +154,13 @@ Phase 1 packaging verification is:
 npm run dist:mac
 ```
 
-After the build, inspect executable bits and ad-hoc signatures under the app's `Contents/Resources/binaries/macos` directory. Mount the DMG read-only, launch the contained executable with an isolated temporary profile, wait for “Downloader workspace,” close it, and detach the image. Windows packaging and native arm64 macOS packaging require their matching platforms and binaries.
+After each build, inspect executable bits, architecture, and ad-hoc signatures
+under the app's target-specific `Contents/Resources/binaries/macos-x64` or
+`macos-arm64` directory. Mount and launch the x64 DMG with an isolated temporary
+profile, wait for “Downloader workspace,” close it, and detach the image. The
+arm64 application and engine receive static checks on the Intel host and must
+be executed later on Apple Silicon. Windows packaging and runtime behavior are
+verified on Windows.
 
 ## Updating visual snapshots
 

@@ -5,7 +5,6 @@ coverage
 test-results
 playwright-report
 design
-binaries/macos
 binaries/macos-arm64
 binaries/macos-x64
 binaries/win
@@ -13,4 +12,5 @@ package-lock.json
 AGENTS.md
 CLAUDE.md
 master-prompt.md
+PHASE-5-ADDENDUM.md
 .vscode

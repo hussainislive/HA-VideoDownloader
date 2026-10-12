@@ -7,21 +7,27 @@ directories:
 files:
   - out/**
   - package.json
+  - LICENSE
   - THIRD_PARTY_NOTICES.md
   - '!**/*.map'
 asar: true
-extraResources:
-  - from: binaries/macos
-    to: binaries/macos
-    filter:
-      - yt-dlp
-      - ffmpeg
 afterPack: scripts/after-pack.mjs
 mac:
+  extraResources:
+    - from: binaries/macos-${arch}
+      to: binaries/macos-${arch}
+      filter:
+        - yt-dlp
+        - ffmpeg
+    - from: LICENSE
+      to: licenses/LICENSE
+    - from: THIRD_PARTY_NOTICES.md
+      to: licenses/THIRD_PARTY_NOTICES.md
   target:
     - target: dmg
       arch:
         - x64
+        - arm64
   category: public.app-category.video
   hardenedRuntime: false
   identity: null
@@ -37,6 +43,16 @@ dmg:
       type: link
       path: /Applications
 win:
+  extraResources:
+    - from: binaries/win
+      to: binaries/win
+      filter:
+        - yt-dlp.exe
+        - ffmpeg.exe
+    - from: LICENSE
+      to: licenses/LICENSE
+    - from: THIRD_PARTY_NOTICES.md
+      to: licenses/THIRD_PARTY_NOTICES.md
   target:
     - target: nsis
       arch:

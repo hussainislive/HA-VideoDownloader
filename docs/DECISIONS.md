@@ -165,3 +165,16 @@ Pause & Quit invokes an idempotent service shutdown, tree-kills active engines,
 keeps partial files, flushes stores, and then closes only if the window still
 exists. Renderer-only prompts were rejected because operating-system quit,
 window controls, and repeated close events can bypass or race renderer state.
+
+## ADR-017 — Package one native engine payload per macOS architecture
+
+**Status:** Accepted; supersedes ADR-007 · **Date:** 2026-10-12
+
+macOS builds now resolve exactly one `macos-x64` or `macos-arm64` payload from
+`process.arch`, with no legacy or cross-architecture fallback. Each DMG contains
+only its matching FFmpeg plus the universal yt-dlp binary, and the post-pack
+hook restores executable permissions and ad-hoc signs both tools. This makes
+the arm64 artifact genuinely native while retaining bad-architecture detection
+as a safety net for x64 builds run through Rosetta. The Intel development host
+can build and statically inspect arm64, but execution remains an explicit Apple
+Silicon verification item.

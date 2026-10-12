@@ -1,12 +1,20 @@
-import { constants } from 'node:fs'
-import { access, chmod, copyFile, mkdir } from 'node:fs/promises'
+import { chmod, copyFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import type { EngineStatus } from '@shared/types/engine'
 import { app } from 'electron'
 
 import { logger } from '../logger'
+import {
+  type BundledBinaryPaths,
+  bundledBinaryPaths,
+  isAccessible,
+  missingBundledBinaries,
+  resolveBundledBinaryPaths,
+} from './binary-resolver'
 import { ProcessRunner } from './process-runner'
+
+export { binaryFolderFor, resolveBundledBinaryPaths } from './binary-resolver'
 
 export interface EnginePaths {
   ytdlp: string
@@ -18,11 +26,8 @@ function existingOverride(name: 'HA_YTDLP_PATH' | 'HA_FFMPEG_PATH'): string | un
   return app.isPackaged ? undefined : process.env[name]
 }
 
-async function exists(path: string): Promise<boolean> {
-  return access(path, constants.X_OK).then(
-    () => true,
-    () => false,
-  )
+async function exists(path: string, executable = process.platform !== 'win32'): Promise<boolean> {
+  return isAccessible(path, executable)
 }
 
 async function resourcesRoot(): Promise<string> {
@@ -31,7 +36,7 @@ async function resourcesRoot(): Promise<string> {
   const candidates = [appRoot, join(appRoot, '..', '..'), process.cwd()]
   for (const candidate of new Set(candidates)) {
     const root = join(candidate, 'binaries')
-    if (await exists(root)) return root
+    if (await exists(root, false)) return root
   }
   return join(appRoot, 'binaries')
 }
@@ -55,15 +60,22 @@ export class BinaryService {
   }
 
   async initialize(): Promise<EngineStatus> {
+    this.#statusError = undefined
     const paths = await this.#resolvePaths()
     this.#paths = paths
     const resolvedYtdlpVersion = this.#resolvedYtdlpVersion
     this.#resolvedYtdlpVersion = undefined
-    const [ytdlpVersion, ffmpegVersion, ytdlpFound, ffmpegFound] = await Promise.all([
-      resolvedYtdlpVersion ? Promise.resolve(resolvedYtdlpVersion) : this.#probeYtdlp(),
-      this.#probeVersion(paths.ffmpeg, ['-version']),
+    const [ytdlpFound, ffmpegFound] = await Promise.all([
       paths.testScript ? Promise.resolve(true) : exists(paths.ytdlp),
       exists(paths.ffmpeg),
+    ])
+    const [ytdlpVersion, ffmpegVersion] = await Promise.all([
+      resolvedYtdlpVersion
+        ? Promise.resolve(resolvedYtdlpVersion)
+        : ytdlpFound
+          ? this.#probeYtdlp()
+          : Promise.resolve(undefined),
+      ffmpegFound ? this.#probeVersion(paths.ffmpeg, ['-version']) : Promise.resolve(undefined),
     ])
     this.#status = {
       ytdlp: this.#binaryStatus(paths.ytdlp, ytdlpFound, ytdlpVersion),
@@ -78,10 +90,9 @@ export class BinaryService {
   async #resolvePaths(): Promise<EnginePaths> {
     this.#resolvedYtdlpVersion = undefined
     const binaryRoot = await resourcesRoot()
-    const platformFolder = process.platform === 'win32' ? 'win' : 'macos'
+    const resolvedBundle = await resolveBundledBinaryPaths(binaryRoot)
+    const bundled = resolvedBundle.ok ? resolvedBundle.value : bundledBinaryPaths(binaryRoot)
     const suffix = process.platform === 'win32' ? '.exe' : ''
-    const bundledYtdlp = join(binaryRoot, platformFolder, `yt-dlp${suffix}`)
-    const bundledFfmpeg = join(binaryRoot, platformFolder, `ffmpeg${suffix}`)
     const engineDir = join(app.getPath('userData'), 'engine')
     const installedYtdlp = join(engineDir, `yt-dlp${suffix}`)
     const ytdlpOverride = existingOverride('HA_YTDLP_PATH')
@@ -89,12 +100,88 @@ export class BinaryService {
     const testScript = app.isPackaged ? undefined : process.env.HA_TEST_ENGINE_SCRIPT
 
     await mkdir(engineDir, { recursive: true })
-    if (!ytdlpOverride && !testScript)
-      this.#resolvedYtdlpVersion = await this.#installWritableCopy(bundledYtdlp, installedYtdlp)
+    if (!bundled) {
+      if (!resolvedBundle.ok) this.#statusError = resolvedBundle.error
+      return this.#enginePaths(
+        installedYtdlp,
+        join(binaryRoot, 'unsupported', `ffmpeg${suffix}`),
+        ytdlpOverride,
+        ffmpegOverride,
+        testScript,
+      )
+    }
+
+    const missing = await missingBundledBinaries(bundled)
+    if (
+      this.#requiredBundleIsMissing(missing, bundled, ytdlpOverride, ffmpegOverride, testScript)
+    ) {
+      this.#statusError = resolvedBundle.ok ? this.#missingEngineError() : resolvedBundle.error
+    }
+    if (!this.#statusError)
+      await this.#prepareWritableYtdlp(bundled.ytdlp, installedYtdlp, ytdlpOverride, testScript)
+    return this.#enginePaths(
+      installedYtdlp,
+      bundled.ffmpeg,
+      ytdlpOverride,
+      ffmpegOverride,
+      testScript,
+    )
+  }
+
+  #enginePaths(
+    installedYtdlp: string,
+    bundledFfmpeg: string,
+    ytdlpOverride?: string,
+    ffmpegOverride?: string,
+    testScript?: string,
+  ): EnginePaths {
     return {
       ytdlp: ytdlpOverride ?? (testScript ? process.execPath : installedYtdlp),
       ffmpeg: ffmpegOverride ?? bundledFfmpeg,
       ...(testScript ? { testScript } : {}),
+    }
+  }
+
+  #requiredBundleIsMissing(
+    missing: readonly string[],
+    bundled: BundledBinaryPaths,
+    ytdlpOverride?: string,
+    ffmpegOverride?: string,
+    testScript?: string,
+  ): boolean {
+    const needsBundledYtdlp = !ytdlpOverride && !testScript
+    const needsBundledFfmpeg = !ffmpegOverride
+    return (
+      (needsBundledYtdlp && missing.includes(bundled.ytdlp)) ||
+      (needsBundledFfmpeg && missing.includes(bundled.ffmpeg))
+    )
+  }
+
+  #missingEngineError(): NonNullable<EngineStatus['error']> {
+    const label = process.platform === 'darwin' ? `macOS ${process.arch}` : 'Windows x64'
+    return {
+      code: 'ENGINE_NOT_FOUND',
+      message: `The bundled download engine for ${label} is missing. Reinstall the matching app build.`,
+      retryable: false,
+    }
+  }
+
+  async #prepareWritableYtdlp(
+    source: string,
+    destination: string,
+    ytdlpOverride?: string,
+    testScript?: string,
+  ): Promise<void> {
+    if (ytdlpOverride || testScript) return
+    try {
+      this.#resolvedYtdlpVersion = await this.#installWritableCopy(source, destination)
+    } catch (error) {
+      logger.warn('Unable to install the writable download engine', error)
+      this.#statusError = {
+        code: 'ENGINE_NOT_FOUND',
+        message: 'The download engine could not be prepared. Reinstall the app and try again.',
+        retryable: true,
+      }
     }
   }
 
@@ -132,10 +219,12 @@ export class BinaryService {
 
   async restoreBundledCopy(): Promise<void> {
     const binaryRoot = await resourcesRoot()
-    const platformFolder = process.platform === 'win32' ? 'win' : 'macos'
+    const bundled = bundledBinaryPaths(binaryRoot)
+    if (!bundled)
+      throw new Error(`Unsupported engine platform: ${process.platform} ${process.arch}`)
     const suffix = process.platform === 'win32' ? '.exe' : ''
     await this.#copyExecutable(
-      join(binaryRoot, platformFolder, `yt-dlp${suffix}`),
+      bundled.ytdlp,
       join(app.getPath('userData'), 'engine', `yt-dlp${suffix}`),
     )
   }
@@ -167,7 +256,6 @@ export class BinaryService {
   }
 
   async #probeYtdlp(): Promise<string | undefined> {
-    this.#statusError = undefined
     const invocation = this.ytdlpInvocation(['--version'])
     const version = await this.#probeVersion(
       invocation.file,

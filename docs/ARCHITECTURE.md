@@ -277,4 +277,10 @@ Normal bounds and maximized state are stored as small JSON in Electron's `userDa
 
 ## Packaging
 
-electron-builder places application code in asar and copies owner-provided binaries into `Contents/Resources/binaries/macos`. The Phase 1 hook restores executable permissions and ad-hoc signs both binaries. Because the supplied FFmpeg is x86_64-only, the current macOS artifact is x64; native arm64 packaging waits for a matching FFmpeg input.
+electron-builder places application code in asar and copies only the target's
+owner-provided binary folder into `Contents/Resources/binaries/macos-x64` or
+`macos-arm64`. Runtime resolution selects that folder from `process.arch` with
+no fallback. The packaging hook restores executable permissions and ad-hoc
+signs both tools. Separate x64 and arm64 DMGs are produced; the arm64 package is
+cross-built on Intel and receives static verification until it can be exercised
+on Apple Silicon hardware.
