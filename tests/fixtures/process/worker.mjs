@@ -15,7 +15,9 @@ if (mode === 'chunked') {
 } else if (mode === 'grandchild') {
   const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
     detached: false,
+    shell: false,
     stdio: 'ignore',
+    windowsHide: true,
   })
   process.stdout.write(`${child.pid}\n`)
   setInterval(() => {}, 1_000)

@@ -1,4 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process'
+import { win32 } from 'node:path'
 
 export type KillMode = 'graceful' | 'force'
 
@@ -55,12 +56,17 @@ function wait(delayMs: number): Promise<void> {
 }
 
 async function killWindowsTree(pid: number): Promise<void> {
-  const child = spawn('taskkill', ['/pid', String(pid), '/T', '/F'], {
+  const child = spawn(windowsTaskkillPath(), ['/pid', String(pid), '/T', '/F'], {
     shell: false,
     windowsHide: true,
     stdio: 'ignore',
   })
   await new Promise<void>((resolve) => child.once('close', () => resolve()))
+}
+
+export function windowsTaskkillPath(env: NodeJS.ProcessEnv = process.env): string {
+  const windowsRoot = env.SystemRoot ?? env.WINDIR
+  return windowsRoot ? win32.join(windowsRoot, 'System32', 'taskkill.exe') : 'taskkill.exe'
 }
 
 async function killPosixTree(child: ChildProcess, pid: number, force: boolean): Promise<void> {

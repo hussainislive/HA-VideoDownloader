@@ -1,8 +1,10 @@
 import { join } from 'node:path'
 
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 
+import { appIconPath } from '../resources'
 import { installNavigationGuards } from '../security/navigation'
+import { rendererEntry } from './renderer-entry'
 import { fadeInWindow } from './window-fade'
 import { loadWindowState, saveWindowState } from './window-state'
 
@@ -26,6 +28,7 @@ export function createMainWindow(): BrowserWindow {
     titleBarStyle: 'hidden',
     frame: isMac,
     ...(isMac ? { trafficLightPosition: { x: 14, y: 16 } } : {}),
+    ...(!isMac ? { icon: appIconPath() } : {}),
     autoHideMenuBar: !isMac,
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
@@ -52,12 +55,8 @@ export function createMainWindow(): BrowserWindow {
     saveWindowState({ ...bounds, isMaximized: window.isMaximized() })
   })
 
-  const rendererUrl = process.env.ELECTRON_RENDERER_URL
-  if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-    if (rendererUrl) void window.loadURL(rendererUrl)
-    else void window.loadFile(join(__dirname, '../renderer/index.html'))
-  } else {
-    void window.loadFile(join(__dirname, '../renderer/index.html'))
-  }
+  const entry = rendererEntry(app.isPackaged, process.env.ELECTRON_RENDERER_URL)
+  if (entry.kind === 'url') void window.loadURL(entry.value)
+  else void window.loadFile(join(__dirname, '../renderer/index.html'))
   return window
 }

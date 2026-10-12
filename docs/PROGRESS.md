@@ -2,13 +2,13 @@
 
 ## Phase status
 
-| Phase                                                | Status         |
-| ---------------------------------------------------- | -------------- |
-| 1 — Foundation, tooling, design system, window shell | ✅ Complete    |
-| 2 — Engine, queue, persistence                       | ✅ Complete    |
-| 3 — Downloader and Queue UI                          | ✅ Complete    |
-| 4 — Library, Settings, About                         | ✅ Complete    |
-| 5 — Hardening and release                            | ⬜ Not started |
+| Phase                                                | Status      |
+| ---------------------------------------------------- | ----------- |
+| 1 — Foundation, tooling, design system, window shell | ✅ Complete |
+| 2 — Engine, queue, persistence                       | ✅ Complete |
+| 3 — Downloader and Queue UI                          | ✅ Complete |
+| 4 — Library, Settings, About                         | ✅ Complete |
+| 5 — Hardening and release                            | ✅ Complete |
 
 ## Phase 1 plan
 
@@ -37,6 +37,10 @@
 - 2026-10-11: Completed Phase 4 on `phase-4-library-settings-about`: real Library, Settings, and About screens plus native notifications, close/recovery protection, single-instance focus, global drop, and shortcut integration.
 - 2026-10-11: Exercised corrupt stores, missing folders, offline and mid-download folder loss, long Unicode titles, 500-row virtualization at 55+ frames per second, relaunch persistence, all-screen axe checks, and visual baselines at 850×600, 1280×800, and 1920×1080.
 - 2026-10-11: Closed Phase 4 with a green `npm run check` (94 Vitest + 32 Electron E2E tests), a production build, clean development launch smoke, local Conventional Commit, and `v0.4.0` tag.
+- 2026-10-12: Started Phase 5 on `phase-5-hardening-release`; migrated the resolver, verifier, scripts, tests, and packaging inputs to native x64/arm64 macOS folders, verified both FFmpeg 9.0.2 builds plus universal yt-dlp 2026.08.19, and passed the repaired baseline `npm run check` (97 Vitest + 32 Electron E2E tests).
+- 2026-10-12: Completed the Phase 5 security, accessibility, performance, cross-platform, licensing, packaging, and release-documentation passes; five real-engine/live tests passed.
+- 2026-10-12: Removed the repeated-download soak and its memory-growth threshold by owner decision; retained the one historical result in `docs/PERFORMANCE.md` and removed the executable test and all release commands.
+- 2026-10-12: Closed Phase 5 with Node 24.21.0: `npm run check` passed (106 Vitest + 33 Electron E2E), finite performance checks passed with the documented Intel idle-memory deviation, production audit found zero vulnerabilities, both DMGs passed package verification, and the x64 DMG passed a mounted launch smoke.
 
 ## Phase 2 plan
 
@@ -76,13 +80,24 @@
 - [x] Pass `npm run check`, build, and the development smoke.
 - [x] Create the local Conventional Commits and `v0.4.0` tag after the final repository audit.
 
+## Phase 5 plan
+
+- [x] Migrate binary resolution, verification, tests, scripts, and packaging to native `macos-x64` and `macos-arm64` inputs with no legacy fallback.
+- [x] Run the repaired baseline gates, then complete full fake-engine and live regression coverage.
+- [x] Audit and harden security, accessibility, cross-platform paths/processes, Windows cleanup semantics, and line-ending/tooling portability.
+- [x] Implement diagnostics and packaged-license access, final icon plumbing/verification, and GPL-3.0-or-later compliance notices.
+- [x] Measure startup, bundle, memory, CPU, and 5,000-row performance on the Intel Mac baseline; document deviations honestly.
+- [x] Produce and smoke-check separate macOS x64 and arm64 artifacts, with static-only arm64 checks clearly identified.
+- [x] Complete release, platform-test, QA, open-source, README, changelog, architecture, testing, and provenance documentation.
+- [x] Pass `npm run check`, live tests, build/package smoke, audit, and the complete Phase 5 Definition of Done.
+
 ## Known issues
 
-- Native Apple Silicon packaging is blocked by the owner-supplied x86_64-only FFmpeg. The current x64 app can use Rosetta on Apple Silicon.
-- `npm audit` reports eight moderate transitive findings and zero high/critical findings; the formal zero high/critical release gate is Phase 5.
+- The Intel baseline uses 388.06 MB idle working-set memory versus the original 300 MB target; the addendum classifies this measured Intel-only deviation as non-blocking.
+- `npm audit` reports eight moderate development-only transitive findings in electron-builder and zero production, high, or critical findings.
 
 ## Owner verification
 
 - Windows 10/11 behavior and packaging will require owner or CI verification.
-- Intel macOS behavior requires Intel hardware or owner verification.
-- Confirm the MIT placeholder license, final app icon, and intended GitHub repository visibility before public release.
+- Apple Silicon runtime behavior requires the owner's friend to follow the Phase 5 test guide.
+- Run the public-release checklist before changing the repository from private to public.

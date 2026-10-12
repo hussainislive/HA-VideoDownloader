@@ -99,7 +99,7 @@ export function Select({
       {open ? (
         <ul
           aria-labelledby={`${id}-label`}
-          className="border-line-strong bg-surface-overlay shadow-card absolute top-full z-30 mt-1 w-full rounded-xl border p-1 backdrop-blur-2xl"
+          className="border-line-strong bg-surface-solid shadow-card absolute top-full z-30 mt-1 w-full rounded-xl border p-1"
           id={`${id}-listbox`}
           role="listbox"
         >

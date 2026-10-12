@@ -88,3 +88,15 @@ references. The source files remain unchanged.
 - Removed the reference's fabricated app build number, company link, and
   framework-version telemetry. The profile image has an initials fallback and
   every icon-only profile action has an accessible tooltip/label.
+- Added the required short legal notice and a compact licenses action to the
+  footer. The action is absent from the reference but makes packaged GPL and
+  third-party notices reachable without adding a new screen.
+
+## Phase 5 performance refinement
+
+- Select menus and confirmation dialogs use opaque semantic surfaces instead
+  of their reference blur. Downloader can already show three glass cards, so
+  solid overlays keep the hard three-blurred-surface ceiling and reduce GPU
+  work without changing spacing or interaction.
+- Library search updates immediately instead of waiting for a decorative delay;
+  this keeps the measured 5,000-item result comfortably below 100 ms.

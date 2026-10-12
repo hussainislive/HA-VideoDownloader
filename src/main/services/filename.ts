@@ -1,21 +1,55 @@
 import { readdir, rm } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 
+const WINDOWS_RESERVED_NAME = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu
+const RETRIABLE_LOCK_CODES = new Set(['EBUSY', 'EPERM'])
+const FILE_UNLOCK_RETRIES = 5
+const FILE_UNLOCK_RETRY_MS = 50
+type RemoveFile = (path: string) => Promise<void>
+
 export function safeFilenameStem(title: string, mediaId: string): string {
-  const safeTitle = [...title]
+  const cleanedTitle = [...title]
     .map((character) =>
       character.charCodeAt(0) < 32 || /[<>:"/\\|?*]/u.test(character) ? '_' : character,
     )
     .join('')
     .trim()
+  const shortenedTitle = [...cleanedTitle]
     .slice(0, 180)
+    .join('')
+    .replace(/[ .]+$/u, '')
+  const safeTitle = WINDOWS_RESERVED_NAME.test(shortenedTitle)
+    ? `_${shortenedTitle}`
+    : shortenedTitle
   return `${safeTitle || 'download'} [${mediaId}]`
+}
+
+function isRetriableLock(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    RETRIABLE_LOCK_CODES.has(error.code)
+  )
+}
+
+async function removeAfterUnlock(path: string, removeFile: RemoveFile): Promise<void> {
+  for (let attempt = 0; attempt <= FILE_UNLOCK_RETRIES; attempt += 1) {
+    try {
+      await removeFile(path)
+      return
+    } catch (error) {
+      if (!isRetriableLock(error) || attempt === FILE_UNLOCK_RETRIES) throw error
+      await new Promise((resolve) => setTimeout(resolve, FILE_UNLOCK_RETRY_MS))
+    }
+  }
 }
 
 export async function cleanupJobPartials(
   outputDir: string,
   title: string,
   mediaId: string,
+  removeFile: RemoveFile = (path) => rm(path, { force: true }),
 ): Promise<string[]> {
   const stem = safeFilenameStem(title, mediaId)
   const names = await readdir(outputDir).catch(() => [])
@@ -29,6 +63,6 @@ export async function cleanupJobPartials(
       /\.f\d+\./u.test(name)
     )
   })
-  await Promise.all(candidates.map((name) => rm(join(outputDir, name), { force: true })))
+  await Promise.all(candidates.map((name) => removeAfterUnlock(join(outputDir, name), removeFile)))
   return candidates
 }

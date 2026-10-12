@@ -60,7 +60,7 @@ export function ConfirmDialog({
         aria-describedby="confirm-dialog-description"
         aria-labelledby="confirm-dialog-title"
         aria-modal="true"
-        className="border-line-strong bg-surface-overlay shadow-card w-full max-w-sm rounded-2xl border p-5 backdrop-blur-2xl"
+        className="border-line-strong bg-surface-solid shadow-card w-full max-w-sm rounded-2xl border p-5"
         ref={dialogRef}
         role="dialog"
       >

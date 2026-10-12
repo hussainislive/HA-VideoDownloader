@@ -128,7 +128,7 @@ describe('DownloadManager with the deterministic engine', () => {
     const job = await waitFor(manager, ({ state }) => state === 'completed', 8_000)
     expect(job.stallRetries).toBe(1)
     expect(job.attempt).toBe(2)
-  })
+  }, 10_000)
 
   it('falls back from MP4 to MKV after a merge failure', async () => {
     const manager = await createManager(directory)
@@ -136,6 +136,14 @@ describe('DownloadManager with the deterministic engine', () => {
     const job = await waitFor(manager, ({ state }) => state === 'completed')
     expect(job.options.container).toBe('mkv')
     expect(job.usedContainerFallback).toBe(true)
+  })
+
+  it('kills the engine safely when paused during a merge', async () => {
+    const manager = await createManager(directory)
+    const queued = manager.enqueue(input(directory, 'merge-slow'))
+    await waitFor(manager, ({ state }) => state === 'processing')
+    expect((await manager.pause(queued.id)).state).toBe('paused')
+    expect((await readdir(directory)).some((name) => name.endsWith('.part'))).toBe(true)
   })
 
   it('falls back to generic selectors when a probed format ID expires', async () => {

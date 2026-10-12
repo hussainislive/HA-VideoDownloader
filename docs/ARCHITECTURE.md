@@ -1,6 +1,6 @@
 # Architecture
 
-This document describes the Phase 4 application boundary. The main process owns the real engine, persisted data, filesystem checks, and native integration; all five responsive screens consume only the narrow validated preload API.
+This document describes the v1 application boundary. The main process owns the real engine, persisted data, filesystem checks, diagnostics, and native integration; all five responsive screens consume only the narrow validated preload API.
 
 ## Process model
 
@@ -31,7 +31,8 @@ The main process owns operating-system capabilities, application state, navigati
 - Handlers return `Result<T, AppError>` and keep technical details out of UI copy.
 - Navigation and new-window creation are blocked. Approved external destinations pass through a main-process allowlist.
 - Production responses receive a strict CSP; the development policy adds only the local Vite/HMR connections.
-- Logs stay local and redact query strings from URLs.
+- Logs stay local and recursively redact full URLs, home-directory paths,
+  nested errors, and circular values.
 
 ## Module map
 
@@ -99,34 +100,36 @@ self-update; a broken update is replaced by the bundled copy.
 `ProcessRunner` always uses argument arrays, `shell: false`, and
 `windowsHide: true`. macOS processes start in a dedicated process group so
 SIGTERM/SIGKILL reaches FFmpeg descendants. Windows uses hidden
-`taskkill /pid … /T /F`. URLs are placed after `--`, and logs redact query
-strings.
+`%SystemRoot%\System32\taskkill.exe /pid … /T /F`. URLs are placed after
+`--`, and logs redact them before writing any engine output.
 
 ## IPC contract
 
-| Channel                      | Direction       | Input         | Result                               |
-| ---------------------------- | --------------- | ------------- | ------------------------------------ |
-| `system:get-version`         | renderer → main | `undefined`   | app version                          |
-| `system:get-startup-notices` | renderer → main | `undefined`   | recovered-store/folder notices       |
-| `system:open-external`       | renderer → main | `{ url }`     | success or allowlist error           |
-| `system:navigate`            | main → renderer | tab event     | notification-driven navigation       |
-| `window:minimize`            | renderer → main | `undefined`   | success                              |
-| `window:toggle-maximize`     | renderer → main | `undefined`   | maximized state                      |
-| `window:is-maximized`        | renderer → main | `undefined`   | maximized state                      |
-| `window:close`               | renderer → main | `undefined`   | success before close                 |
-| `window:maximize-changed`    | main → renderer | boolean event | unsubscribe function in preload API  |
-| `engine:get-status`          | renderer → main | `undefined`   | real binary paths/versions/readiness |
-| `media:probe`                | renderer → main | `{ url }`     | normalized media metadata/formats    |
-| `media:cancel-probe`         | renderer → main | `undefined`   | cancels the current probe tree       |
-| `downloads:*`                | both directions | typed jobs    | snapshot/actions + batched events    |
-| `library:*`                  | both directions | typed queries | history/status/delete + change event |
-| `settings:*`                 | both directions | typed updates | persisted settings + change events   |
-| `dialog:choose-folder`       | renderer → main | `undefined`   | selected path or cancel              |
-| `disk:get-free-bytes`        | renderer → main | `{ path }`    | available bytes                      |
-| `clipboard:*`                | renderer → main | typed text    | URL read and safe text write         |
-| `shell:*`                    | renderer → main | `{ path }`    | play/open-location result            |
+| Channel                       | Direction       | Input         | Result                               |
+| ----------------------------- | --------------- | ------------- | ------------------------------------ |
+| `system:get-version`          | renderer → main | `undefined`   | app version                          |
+| `system:get-startup-notices`  | renderer → main | `undefined`   | recovered-store/folder notices       |
+| `system:copy-diagnostic-info` | renderer → main | `undefined`   | redacted report copied to clipboard  |
+| `system:open-licenses`        | renderer → main | `undefined`   | packaged notice opened by the OS     |
+| `system:open-external`        | renderer → main | `{ url }`     | success or allowlist error           |
+| `system:navigate`             | main → renderer | tab event     | notification-driven navigation       |
+| `window:minimize`             | renderer → main | `undefined`   | success                              |
+| `window:toggle-maximize`      | renderer → main | `undefined`   | maximized state                      |
+| `window:is-maximized`         | renderer → main | `undefined`   | maximized state                      |
+| `window:close`                | renderer → main | `undefined`   | success before close                 |
+| `window:maximize-changed`     | main → renderer | boolean event | unsubscribe function in preload API  |
+| `engine:get-status`           | renderer → main | `undefined`   | real binary paths/versions/readiness |
+| `media:probe`                 | renderer → main | `{ url }`     | normalized media metadata/formats    |
+| `media:cancel-probe`          | renderer → main | `undefined`   | cancels the current probe tree       |
+| `downloads:*`                 | both directions | typed jobs    | snapshot/actions + batched events    |
+| `library:*`                   | both directions | typed queries | history/status/delete + change event |
+| `settings:*`                  | both directions | typed updates | persisted settings + change events   |
+| `dialog:choose-folder`        | renderer → main | `undefined`   | selected path or cancel              |
+| `disk:get-free-bytes`         | renderer → main | `{ path }`    | available bytes                      |
+| `clipboard:*`                 | renderer → main | typed text    | URL read and safe text write         |
+| `shell:*`                     | renderer → main | `{ path }`    | play/open-location result            |
 
-Domain methods live under `window.api.engine`, `media`, `downloads`,
+Domain methods live under `window.api.system`, `engine`, `media`, `downloads`,
 `library`, `settings`, `dialog`, `shell`, and `clipboard`. Every request has a
 zod schema and every response is `Result<T, AppError>`. The only pushed events
 are engine status, batched download snapshots, library changes, settings
@@ -251,11 +254,19 @@ fully validated enqueue request. The title-bar engine pill is driven by the
 same live engine mirror.
 
 Library keeps only query/filter/sort/delete-dialog state locally; its shared
-mirror refreshes on focus and history events. Settings writes through validated
-IPC and applies concurrency and always-on-top state immediately. About reads
-the version from `app.getVersion()` and routes every external action through the
-allowlist. A shell-level integration hook handles startup notices and native
-notification navigation without importing privileged modules.
+mirror refreshes on focus and history events. Its synchronous 5,000-item query
+is measured below 100 ms and the main-process search filters before filesystem
+status checks. Settings writes through validated IPC and applies concurrency
+and always-on-top state immediately. About reads the version from
+`app.getVersion()`, routes every external action through the allowlist, and can
+open packaged notices through a dedicated action. A shell-level integration
+hook handles startup notices and native notification navigation without
+importing privileged modules.
+
+Packaged binary lookup starts at `process.resourcesPath/binaries`; development
+searches candidate application roots for the same `binaries` directory. A
+regression test protects this distinction because static artifact checks alone
+cannot prove runtime lookup from a mounted DMG.
 
 ## Native lifecycle and activity
 
@@ -277,4 +288,12 @@ Normal bounds and maximized state are stored as small JSON in Electron's `userDa
 
 ## Packaging
 
-electron-builder places application code in asar and copies owner-provided binaries into `Contents/Resources/binaries/macos`. The Phase 1 hook restores executable permissions and ad-hoc signs both binaries. Because the supplied FFmpeg is x86_64-only, the current macOS artifact is x64; native arm64 packaging waits for a matching FFmpeg input.
+electron-builder places application code in asar and copies only the target's
+owner-provided binary folder into `Contents/Resources/binaries/macos-x64` or
+`macos-arm64`. Runtime resolution selects that folder from `process.arch` with
+no fallback. The packaging hook restores executable permissions and ad-hoc
+signs both tools. Separate x64 and arm64 DMGs are produced; the arm64 package is
+cross-built on Intel and receives static verification until it can be exercised
+on Apple Silicon hardware. The Windows NSIS x64 build analogously receives only
+`binaries/win` and is built on Windows. Both package families include the GPL
+license, third-party notice, and the single verified `resources/icon.png` source.

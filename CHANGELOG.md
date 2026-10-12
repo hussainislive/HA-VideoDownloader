@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-12
+
+### Added
+
+- Native Intel and Apple Silicon macOS engine resolution, architecture-specific DMGs, static arm64 validation, package smoke checks, and complete binary provenance.
+- One verified app-icon source for packages, windows, development Dock display, and notifications.
+- Redacted Help diagnostics, local-log access, packaged GPL and third-party notices, and an About licenses action.
+- Release QA, Apple Silicon, Windows, icon, security, contribution, public-repository, manual-release, and 1.0 release-note documentation.
+- Automated renderer bundle budget plus finite Intel-host startup, CPU, memory, 5,000-row Library, and frame-rate measurements.
+- Windows-safe taskkill resolution, reserved-filename handling, locked-partial retries, line-ending policy, and guarded platform-only tests/scripts.
+
+### Changed
+
+- License the application under GPL-3.0-or-later and inventory every locked runtime dependency and bundled engine with corresponding-source details.
+- Search 5,000 Library items immediately without an artificial debounce, and filter before checking file status for main-process searches.
+- Use solid Select and confirmation overlays so no screen exceeds three simultaneous blurred surfaces.
+- Redact full URLs, home paths, nested errors, and circular objects from local logs.
+
+### Fixed
+
+- Resolve packaged engines from `Contents/Resources/binaries` so a mounted DMG can prepare yt-dlp and report Engine Ready instead of treating both bundled tools as unavailable.
+- Resolve `taskkill.exe` through the Windows system directory and hide every spawned child process.
+- Preserve Unicode code points while truncating filenames, reject Windows device names, and trim trailing dots/spaces.
+- Align the HTML and response CSPs while continuing to block inline script, Node access, navigation, and unapproved external URLs.
+- Ignore injected development-server URLs in packaged builds so production always loads the local renderer.
+
 ## [0.4.0] - 2026-10-11
 
 ### Added
@@ -72,7 +98,8 @@ All notable changes to this project will be documented in this file. The format 
 - Cancel and guard the window fade timer when a rapidly closed BrowserWindow is destroyed, preventing repeated main-process error dialogs.
 - Capture Electron visual baselines through the native web contents so macOS automation records rendered pixels instead of a black surface.
 
-[Unreleased]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/hussainislive/HA-VideoDownloader/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.4.0...v1.0.0
 [0.4.0]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/hussainislive/HA-VideoDownloader/compare/v0.1.0...v0.2.0

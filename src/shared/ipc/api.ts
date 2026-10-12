@@ -52,11 +52,13 @@ export interface HaApi {
     showInFolder: (path: string) => Promise<Result<undefined>>
   }
   system: {
+    copyDiagnosticInfo: () => Promise<Result<undefined>>
     getPlatform: () => AppPlatform
     getStartupNotices: () => Promise<Result<string[]>>
     getVersion: () => Promise<Result<string>>
     onNavigate: (listener: (target: NavigationTarget) => void) => () => void
     openExternal: (url: string) => Promise<Result<undefined>>
+    openLicenses: () => Promise<Result<undefined>>
   }
   window: {
     close: () => Promise<Result<undefined>>

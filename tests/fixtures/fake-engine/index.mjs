@@ -124,6 +124,7 @@ for (let step = 1; step <= 10 && !stopped; step += 1) {
   await new Promise((resolve) => setTimeout(resolve, delay))
 }
 process.stderr.write('[Merger] Merging formats into output\n')
+if (url.includes('merge-slow')) await new Promise((resolve) => setTimeout(resolve, 2_000))
 await writeFile(partPath, Buffer.alloc(2_048))
 await rename(partPath, finalPath)
 process.stdout.write(`HAFILE|${finalPath}\n`)

@@ -44,7 +44,7 @@ Resolved from the npm registry on 2026-10-09. Every package is exact-pinned in `
 | Import sorting      | `eslint-plugin-simple-import-sort` |  14.0.0 | Deterministic imports                         |
 | Formatting          | `prettier`                         |   3.9.9 | Repository formatting                         |
 | Tailwind formatting | `prettier-plugin-tailwindcss`      |   0.8.1 | Canonical utility order                       |
-| Packaging           | `electron-builder`                 | 26.15.3 | DMG and future NSIS artifacts                 |
+| Packaging           | `electron-builder`                 | 26.15.3 | x64/arm64 DMGs and Windows x64 NSIS artifacts |
 | Git hooks           | `husky`                            |   9.1.7 | Fast pre-commit hook                          |
 | Staged checks       | `lint-staged`                      |  17.5.1 | Lint and format changed files                 |
 | TS execution        | `tsx`                              | 4.23.15 | Repository scripts                            |
@@ -57,4 +57,8 @@ Resolved from the npm registry on 2026-10-09. Every package is exact-pinned in `
 - Electron 44.7.0 is the deliberate exception to the 14-day preference because current security patches take priority.
 - Playwright 1.64.0 is also newer than the preference window because `@axe-core/playwright` 4.13.0 depends on the matching core types.
 - The development machine's global Node was 26, so all Phase 1 gates were run with an isolated Node 24.21.0 executable. Contributors should use `.nvmrc` instead.
-- The Phase 1 install reported eight moderate transitive audit findings and no high or critical findings. The release gate requires zero high/critical findings in Phase 5.
+- The Phase 5 audit reports zero production vulnerabilities and zero
+  high/critical findings. Eight moderate development-only findings remain in
+  electron-builder's `global-agent`/`roarr`/`sprintf-js` chain; npm offers only
+  a forced electron-builder downgrade, so the exact-pinned release toolchain is
+  retained and reviewed before every release.

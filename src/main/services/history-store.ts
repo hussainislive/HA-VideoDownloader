@@ -33,7 +33,10 @@ export class HistoryStore {
   }
 
   async listWithStatus(): Promise<LibraryItem[]> {
-    const items = this.list()
+    return this.#withStatus(this.list())
+  }
+
+  async #withStatus(items: readonly HistoryItem[]): Promise<LibraryItem[]> {
     const result: LibraryItem[] = []
     for (let index = 0; index < items.length; index += 32) {
       const batch = items.slice(index, index + 32)
@@ -54,11 +57,12 @@ export class HistoryStore {
 
   async search(input: LibrarySearchInput): Promise<LibraryItem[]> {
     const query = input.query.trim().toLocaleLowerCase()
-    return (await this.listWithStatus()).filter((item) => {
+    const matches = this.list().filter((item) => {
       const matchesKind = !input.kind || item.options.kind === input.kind
       const haystack = `${item.title} ${item.uploader ?? ''} ${item.platform}`.toLocaleLowerCase()
       return matchesKind && haystack.includes(query)
     })
+    return this.#withStatus(matches)
   }
 
   async append(job: DownloadJob): Promise<HistoryItem | undefined> {

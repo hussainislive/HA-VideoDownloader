@@ -8,6 +8,8 @@ import { BinaryService } from '../engine/binaries'
 import { EngineUpdater } from '../engine/updater'
 import { YtdlpDownloadService } from '../engine/ytdlp/download'
 import { MediaProbeService } from '../engine/ytdlp/probe'
+import { appIconPath } from '../resources'
+import { formatDiagnosticInfo } from './diagnostics'
 import { HistoryStore } from './history-store'
 import { QueueStore } from './queue-store'
 import { SettingsStore } from './settings-store'
@@ -35,6 +37,17 @@ export class AppServices {
 
   get startupNotices(): readonly string[] {
     return this.#startupNotices
+  }
+
+  diagnosticInfo(): string {
+    const jobErrors =
+      this.downloads?.snapshot().jobs.flatMap((job) => (job.error ? [job.error.code] : [])) ?? []
+    const engineError = this.binaries.status.error?.code
+    return formatDiagnosticInfo({
+      appVersion: app.getVersion(),
+      engine: this.binaries.status,
+      errorCodes: [...jobErrors, ...(engineError ? [engineError] : [])],
+    })
   }
 
   async #initialize(): Promise<void> {
@@ -83,7 +96,7 @@ export class AppServices {
       return
     if (!Notification.isSupported()) return
     if (process.platform === 'darwin' && app.dock) app.dock.bounce('informational')
-    const notification = new Notification({ title, body: job.title })
+    const notification = new Notification({ title, body: job.title, icon: appIconPath() })
     notification.on('click', () => {
       const current = this.getWindow()
       if (current && !current.isDestroyed()) {

@@ -124,8 +124,16 @@ test('uses the local About profile and only opens allowlisted external links', a
   })
   const { app, page } = launched
   await app.evaluate(({ shell }) => {
-    const scope = globalThis as typeof globalThis & { __haOpenedUrls?: string[] }
+    const scope = globalThis as typeof globalThis & {
+      __haOpenedPaths?: string[]
+      __haOpenedUrls?: string[]
+    }
+    scope.__haOpenedPaths = []
     scope.__haOpenedUrls = []
+    shell.openPath = (path): Promise<string> => {
+      scope.__haOpenedPaths?.push(path)
+      return Promise.resolve('')
+    }
     shell.openExternal = (url): Promise<void> => {
       scope.__haOpenedUrls?.push(url)
       return Promise.resolve()
@@ -138,6 +146,20 @@ test('uses the local About profile and only opens allowlisted external links', a
   await expect
     .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
     .toBe('developer.hussain125@gmail.com')
+  await page.getByRole('button', { name: 'Licenses & third-party notices' }).click()
+  await expect
+    .poll(() =>
+      app.evaluate(() => {
+        const scope = globalThis as typeof globalThis & { __haOpenedPaths?: string[] }
+        return scope.__haOpenedPaths?.[0]
+      }),
+    )
+    .toMatch(/THIRD_PARTY_NOTICES\.md$/u)
+  const diagnosticResult = await page.evaluate(() => window.api.system.copyDiagnosticInfo())
+  expect(diagnosticResult).toEqual({ ok: true, value: undefined })
+  await expect
+    .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+    .toContain('Architecture:')
   await page.getByRole('button', { name: 'View on GitHub' }).click()
   await page.getByRole('button', { name: 'LinkedIn' }).first().click()
   await expect

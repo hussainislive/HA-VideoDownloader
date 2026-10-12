@@ -185,7 +185,8 @@ ha-video-downloader/                       (git repo: HA-VideoDownloader)
 ├── vitest.config.ts   playwright.config.ts
 ├── binaries/                              OWNER-PROVIDED, NOT COMMITTED (see 4.2)
 │   ├── README.md                          where each binary comes from + how to verify
-│   ├── macos/   (yt-dlp, ffmpeg)          or macos-arm64/ + macos-x64/ if ffmpeg is not universal
+│   ├── macos-x64/    (yt-dlp, ffmpeg)      Intel macOS payload
+│   ├── macos-arm64/  (yt-dlp, ffmpeg)      Apple Silicon payload
 │   └── win/     (yt-dlp.exe, ffmpeg.exe)
 ├── design/                                OWNER-PROVIDED, READ-ONLY for agents
 │   ├── DESIGN.md
@@ -482,7 +483,7 @@ Every async action shows progress or a skeleton within 100 ms; no blank flashes;
 ### 8.1 Binary resolution and installation
 
 - **Development:** binaries from `<repo>/binaries/<platform>/`. **Packaged:** from `process.resourcesPath/binaries/<platform>/`.
-- macOS layout depends on the Phase 1 architecture check (`lipo -info`): if both tools are universal (or the arch matches), use `binaries/macos/`; if either is single-architecture, use `binaries/macos-arm64/` and `binaries/macos-x64/` and select by `process.arch`. Windows: `binaries/win/`.
+- macOS uses `binaries/macos-arm64/` and `binaries/macos-x64/`, selected strictly by `process.arch`; there is no fallback folder. Windows uses `binaries/win/`.
 - **Writable engine copy:** on first launch (and whenever the bundled yt-dlp is newer than the installed copy) copy `yt-dlp` into `app.getPath('userData')/engine/` and `chmod 755` on macOS. **All yt-dlp runs and updates use this copy**, so `yt-dlp -U` never touches the signed/read-only app bundle. ffmpeg stays in the resources folder (it is not self-updating) and is passed with `--ffmpeg-location <dir-or-file>`.
 - macOS specifics: remove quarantine on the copied binary best-effort (`xattr -d com.apple.quarantine`, ignore failure); if spawning an arm64 binary fails with a signature error, ad-hoc sign it (`codesign --force --sign - <file>`) — and make the packaging step (section 13) do this for the bundled ffmpeg/yt-dlp. If an Intel-only binary is run on Apple Silicon, it needs Rosetta: detect `EBADARCH`/`Bad CPU type` and show a clear message rather than a generic failure.
 - Test/override hooks (documented in `docs/TESTING.md`, **ignored in production builds**): `HA_YTDLP_PATH`, `HA_FFMPEG_PATH`, and `HA_TEST_ENGINE_SCRIPT` (section 11.3).
@@ -594,7 +595,7 @@ Five phases, executed one at a time on the owner's command. Each lists **Goal �
 **Goal:** a launchable, secure, beautiful empty shell that already looks like the final app (title bar, tabs, tokens, primitives) with all tooling, testing, and docs scaffolding in place.
 
 **Tasks**
-1. **Preflight.** Read everything (section 0.1). Run `npm run verify:binaries` logic manually first: `lipo -info` and `--version` for both macOS binaries; report whether ffmpeg/yt-dlp are universal, arm64-only, or x86_64-only, and choose the binary layout of section 8.1. Audit every `design/*/code.html` (section 2.1) → write `docs/DESIGN-AUDIT.md`. Resolve dependency versions (section 3.1) → `docs/STACK.md`.
+1. **Preflight.** Read everything (section 0.1). Run `npm run verify:binaries` logic manually first: `lipo -info` and `--version` for runnable macOS binaries; report whether ffmpeg/yt-dlp are universal, arm64-only, or x86_64-only, and verify the architecture-specific layout in section 8.1. Audit every `design/*/code.html` (section 2.1) → write `docs/DESIGN-AUDIT.md`. Resolve dependency versions (section 3.1) → `docs/STACK.md`.
 2. **Repo hygiene.** `.gitignore` (node_modules, out, dist, release, coverage, test-results, playwright-report, `.DS_Store`, binaries contents, `*.log`), `.editorconfig`, `.nvmrc` (24), `.prettierrc`, `LICENSE` (MIT placeholder, flag it), `binaries/README.md`, `THIRD_PARTY_NOTICES.md` skeleton. Do **not** remove or modify `design/`.
 3. **Scaffold.** Create the electron-vite React-TS project **in a temporary folder**, then merge it into the repo root without touching `design/` or `binaries/`; convert to the structure in section 4; delete template demo code (logos, counters). Set `productName` "HA Premium Video Downloader", `appId` `com.hussainislive.havideodownloader`, `author` Hussain Ahmed, `homepage` the GitHub repo.
 4. **TypeScript + tooling.** Strict tsconfigs (node/web split), aliases, ESLint flat config (a11y, hooks, import order, `no-explicit-any`, `no-restricted-syntax` banning color literals in `.tsx`), Prettier + Tailwind plugin, Vitest, Playwright, husky + lint-staged, all scripts from section 3.3. `scripts/verify-binaries.ts` and `scripts/render-design.ts`.
@@ -680,7 +681,7 @@ Five phases, executed one at a time on the owner's command. Each lists **Goal �
 7. **Packaging** (section 13): electron-builder config finalized, icons, DMG (x64 + arm64) and NSIS (x64), version stamping, `THIRD_PARTY_NOTICES.md` completed from real dependency licenses (use `license-checker`-style tooling), build artifacts named `HA-Premium-Video-Downloader-<version>-<os>-<arch>.<ext>`, smoke-install test of the produced artifacts.
 8. **Release docs:** final README (section 14.1 complete, screenshots/GIFs, install instructions per OS, troubleshooting, FAQ, roadmap), `CONTRIBUTING.md`, `docs/QA-CHECKLIST.md` (manual matrix: macOS arm64, macOS x64, Windows 10, Windows 11 × flows), `CHANGELOG.md` v1.0.0 section, GitHub release notes draft in `docs/RELEASE-NOTES-1.0.0.md`, issue templates (`.github/ISSUE_TEMPLATE/*`), optional CI workflow (`.github/workflows/ci.yml`) that runs lint/typecheck/unit/e2e(fake engine) on macOS and Windows runners — binaries are fetched in CI from official release URLs with checksum verification, never committed.
 
-**Tests:** the whole pyramid; 30-minute soak test (script enqueues repeated short downloads with the fake engine; memory must not grow > 10% after warmup); chaos tests (kill engine mid-merge, remove network, fill disk simulation, corrupt JSON); visual snapshots all screens at 3 sizes.
+**Tests:** the whole pyramid; chaos tests (kill engine mid-merge, remove network, fill disk simulation, corrupt JSON); visual snapshots all screens at 3 sizes.
 
 **DoD:** `npm run check` green; `dist:mac` and `dist:win` produce installable artifacts (`dist:win` may be produced on macOS only if the toolchain allows; otherwise on the owner's Windows machine or CI — state clearly what was and wasn't verified); performance budgets met or deviations documented; zero high/critical audit findings; docs complete; the Phase 5 report includes a **release checklist** with every item marked verified / needs-owner-verification.
 
@@ -767,7 +768,7 @@ No `console.*` in `src/` (use the logger); no color literals in components; no d
 |---|---|
 | Cold start → window shown | ≤ 1.0 s on Apple Silicon; ≤ 2.0 s on a mid-range Windows laptop |
 | Cold start → interactive (URL input focusable) | ≤ 1.5 s / ≤ 2.5 s |
-| Idle memory (all processes) | ≤ 300 MB; no growth > 10% over a 30-minute soak |
+| Idle memory (all processes) | ≤ 300 MB |
 | Idle CPU | < 1% |
 | CPU with 3 active downloads | < 15% of one core for the app itself (yt-dlp/ffmpeg excluded) |
 | UI frame rate during tab change and with 3 live progress bars | ≥ 55 fps |

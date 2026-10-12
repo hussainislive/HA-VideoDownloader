@@ -11,8 +11,9 @@ import { YtdlpDownloadService } from '../../src/main/engine/ytdlp/download'
 import { parseProbeJson } from '../../src/main/engine/ytdlp/probe'
 import type { DownloadJob } from '../../src/shared/types/download'
 
-const ytdlp = join(process.cwd(), 'binaries/macos/yt-dlp')
-const ffmpeg = join(process.cwd(), 'binaries/macos/ffmpeg')
+const macFolder = process.arch === 'arm64' ? 'macos-arm64' : 'macos-x64'
+const ytdlp = join(process.cwd(), 'binaries', macFolder, 'yt-dlp')
+const ffmpeg = join(process.cwd(), 'binaries', macFolder, 'ffmpeg')
 const landscapeUrl = 'https://commons.wikimedia.org/wiki/File:Test-webM.webm'
 const audioUrl =
   'https://commons.wikimedia.org/wiki/File:Example_sound_file_in_Ogg_Vorbis_format.ogg'
@@ -127,7 +128,7 @@ test.describe.serial('real bundled engine @live', () => {
     }
     await handle.kill()
     await handle.result
-    if (handle.pid)
+    if (process.platform === 'darwin' && handle.pid)
       expect((await new ProcessRunner().run('ps', ['-p', String(handle.pid)])).code).not.toBe(0)
     const resumedPath = await runDownload(resumeJob)
     expect((await stat(resumedPath)).size).toBe((await stat(videoPath)).size)

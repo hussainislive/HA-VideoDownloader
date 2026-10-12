@@ -1,27 +1,32 @@
 appId: com.hussainislive.havideodownloader
 productName: HA Premium Video Downloader
-copyright: Copyright © 2026 Hussain Ahmed
+copyright: Copyright © 2026 Hussain Ahmed — GNU GPL v3 or later
 directories:
   output: release
   buildResources: resources
 files:
   - out/**
   - package.json
+  - LICENSE
   - THIRD_PARTY_NOTICES.md
   - '!**/*.map'
 asar: true
-extraResources:
-  - from: binaries/macos
-    to: binaries/macos
-    filter:
-      - yt-dlp
-      - ffmpeg
 afterPack: scripts/after-pack.mjs
 mac:
+  extraResources:
+    - from: binaries/macos-${arch}
+      to: binaries/macos-${arch}
+      filter:
+        - yt-dlp
+        - ffmpeg
+    - from: LICENSE
+      to: licenses/LICENSE
+    - from: THIRD_PARTY_NOTICES.md
+      to: licenses/THIRD_PARTY_NOTICES.md
+    - from: resources/icon.png
+      to: icon.png
   target:
     - target: dmg
-      arch:
-        - x64
   category: public.app-category.video
   hardenedRuntime: false
   identity: null
@@ -37,10 +42,20 @@ dmg:
       type: link
       path: /Applications
 win:
+  extraResources:
+    - from: binaries/win
+      to: binaries/win
+      filter:
+        - yt-dlp.exe
+        - ffmpeg.exe
+    - from: LICENSE
+      to: licenses/LICENSE
+    - from: THIRD_PARTY_NOTICES.md
+      to: licenses/THIRD_PARTY_NOTICES.md
+    - from: resources/icon.png
+      to: icon.png
   target:
     - target: nsis
-      arch:
-        - x64
   icon: resources/icon.png
   artifactName: HA-Premium-Video-Downloader-${version}-win-${arch}.${ext}
 nsis:
