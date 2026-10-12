@@ -65,10 +65,20 @@ produce separate x64 and arm64 DMGs; the arm64 package needs physical Apple
 Silicon verification. The Windows x64 installer is built and verified on
 Windows, not cross-built on macOS.
 
-Choose the macOS download in **Apple menu → About This Mac**: if it says
-“Chip: Apple M…”, use the arm64 DMG; if it says “Processor: Intel…”, use the x64
-DMG. The x64 build can also run on Apple Silicon through Rosetta, but the native
-arm64 build is recommended there.
+### Which macOS file should I download?
+
+Open **Apple menu → About This Mac** and look for **Chip** or **Processor**.
+Do not choose only by the Mac's year because Apple sold Intel and Apple Silicon
+models at the same time during the transition.
+
+| What About This Mac shows                  | Correct download                                      | Typical computers                                                               |
+| ------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Chip: Apple M1, M2, M3, M4, or newer**   | `HA-Premium-Video-Downloader-<version>-mac-arm64.dmg` | Apple Silicon MacBook Air, MacBook Pro, Mac mini, iMac, Mac Studio, and Mac Pro |
+| **Processor: Intel Core i5, i7, i9, etc.** | `HA-Premium-Video-Downloader-<version>-mac-x64.dmg`   | Intel MacBook, MacBook Air, MacBook Pro, Mac mini, iMac, iMac Pro, and Mac Pro  |
+
+`mac-arm64.dmg` is the native and recommended build for Apple Silicon. The x64
+build can run on an Apple Silicon Mac through Rosetta, but it is intended for
+Intel Macs and is not the preferred download for an M-series Mac.
 
 For a local unsigned macOS build, open the DMG and drag the app to Applications. On first launch, right-click the app and choose **Open**. If macOS still blocks it, run:
 
@@ -97,24 +107,177 @@ Site support will follow the installed yt-dlp engine. See the upstream [supporte
 
 ## Build from source
 
-Prerequisites:
+Build macOS packages on macOS and the Windows installer on Windows. Do not
+cross-build the Windows installer from a Mac. All package versions are
+exact-pinned, and the native yt-dlp/FFmpeg files are intentionally not stored
+in Git.
 
-- Node.js 24 LTS and npm 11+
-- macOS or Windows
-- The platform binaries described in [`binaries/README.md`](binaries/README.md)
+### Requirements
+
+- [Git](https://git-scm.com/downloads)
+- [Node.js 24 LTS](https://nodejs.org/) with npm 11 or newer
+- About 2 GB of free space for dependencies and package output
+- The yt-dlp and FFmpeg files described below
+
+Confirm the Node and npm versions before continuing:
 
 ```sh
-npm ci
-npm run verify:binaries
-npm run dev
-npm run check
-npm run dist:mac   # separate macOS x64 and arm64 DMGs
-npm run dist:mac:x64
-npm run dist:mac:arm64
-# npm run dist:win # Windows x64; run on Windows
+node --version
+npm --version
 ```
 
-All package versions are exact-pinned. Do not commit the binary payloads or generated `out/` and `release/` directories.
+`node --version` must show `v24.x.x`. Clone the repository, enter it, and
+install the exact locked dependencies:
+
+```sh
+git clone https://github.com/hussainislive/HA-VideoDownloader.git
+cd HA-VideoDownloader
+npm ci
+```
+
+### Binary paths
+
+You do **not** need to add yt-dlp or FFmpeg to the operating system `PATH`.
+Place them in these exact repository folders; the app and packaging scripts
+resolve them automatically:
+
+```text
+HA-VideoDownloader/
+└── binaries/
+    ├── macos-x64/
+    │   ├── yt-dlp
+    │   └── ffmpeg
+    ├── macos-arm64/
+    │   ├── yt-dlp
+    │   └── ffmpeg
+    └── win/
+        ├── yt-dlp.exe
+        └── ffmpeg.exe
+```
+
+There is no `binaries/macos/` fallback. Names and capitalization must match
+the tree exactly. Never commit these binary files.
+
+### Create macOS builds
+
+The Mac build can create both DMGs on either an Intel or Apple Silicon Mac.
+Download:
+
+1. The universal `yt-dlp_macos` file from the
+   [official yt-dlp release page](https://github.com/yt-dlp/yt-dlp/releases).
+   Rename it to `yt-dlp` and place an identical copy in both macOS folders.
+2. The matching Intel/x86_64 and Apple Silicon/arm64 FFmpeg archives from
+   [Martin Riedl's static FFmpeg builds](https://ffmpeg.martin-riedl.de/).
+   Extract the `ffmpeg` executable from each archive into its matching folder.
+3. `yt-dlp.exe` from the official yt-dlp release page and the Windows x64
+   `ffmpeg.exe` essentials build linked from the
+   [official FFmpeg Windows download page](https://ffmpeg.org/download.html#build-windows).
+   The macOS verifier checks these Windows inputs statically as part of the
+   complete release-binary audit.
+
+Create the folders and copy previously downloaded files from Terminal. Replace
+the example `/path/to/...` values with their real locations:
+
+```sh
+mkdir -p binaries/macos-x64 binaries/macos-arm64 binaries/win
+
+cp /path/to/yt-dlp_macos binaries/macos-x64/yt-dlp
+cp /path/to/yt-dlp_macos binaries/macos-arm64/yt-dlp
+cp /path/to/x64/ffmpeg binaries/macos-x64/ffmpeg
+cp /path/to/arm64/ffmpeg binaries/macos-arm64/ffmpeg
+cp /path/to/yt-dlp.exe binaries/win/yt-dlp.exe
+cp /path/to/ffmpeg.exe binaries/win/ffmpeg.exe
+
+chmod +x binaries/macos-x64/yt-dlp binaries/macos-x64/ffmpeg
+chmod +x binaries/macos-arm64/yt-dlp binaries/macos-arm64/ffmpeg
+xattr -dr com.apple.quarantine binaries
+```
+
+Verify the files and run the release gate:
+
+```sh
+npm run verify:binaries
+npm run check
+```
+
+Build both macOS packages:
+
+```sh
+npm run dist:mac
+```
+
+Or build only one architecture:
+
+```sh
+npm run dist:mac:x64    # Intel Macs
+npm run dist:mac:arm64  # Apple Silicon M-series Macs
+```
+
+The finished files are written to `release/`:
+
+```text
+release/HA-Premium-Video-Downloader-<version>-mac-x64.dmg
+release/HA-Premium-Video-Downloader-<version>-mac-arm64.dmg
+```
+
+Each DMG contains only its matching FFmpeg architecture. Test the x64 DMG on an
+Intel Mac and the arm64 DMG on an Apple Silicon Mac before publishing them.
+
+### Create the Windows build
+
+Use a 64-bit Windows 10 or Windows 11 computer. Download `yt-dlp.exe` from the
+[official yt-dlp releases](https://github.com/yt-dlp/yt-dlp/releases). Download
+the Windows x64 FFmpeg essentials archive through the
+[official FFmpeg Windows page](https://ffmpeg.org/download.html#build-windows),
+extract it, and locate `bin\ffmpeg.exe` inside the extracted folder.
+
+From PowerShell in the repository, create the binary folder and copy the two
+files. Replace the example source paths with the real downloaded locations:
+
+```powershell
+New-Item -ItemType Directory -Force binaries\win
+Copy-Item "C:\path\to\yt-dlp.exe" "binaries\win\yt-dlp.exe"
+Copy-Item "C:\path\to\ffmpeg\bin\ffmpeg.exe" "binaries\win\ffmpeg.exe"
+```
+
+Install dependencies, verify the Windows binaries, and run the release gate:
+
+```powershell
+npm ci
+npm run verify:binaries
+npm run check
+```
+
+Create the Windows x64 installer:
+
+```powershell
+npm run dist:win
+```
+
+The installer is written to:
+
+```text
+release\HA-Premium-Video-Downloader-<version>-win-x64.exe
+```
+
+It is a per-user installer with an install-folder choice plus Desktop and Start
+Menu shortcuts. Because local builds are unsigned, Windows SmartScreen may
+show a warning. Bypass it only for an installer you built yourself and after
+Windows Defender reports no malware detection.
+
+### Build a new version
+
+To produce filenames with a new version number, update `package.json` and
+`package-lock.json` together before building. For example:
+
+```sh
+npm version 1.0.1 --no-git-tag-version
+npm run check
+```
+
+Then run `npm run dist:mac` on macOS and `npm run dist:win` on Windows. The
+artifact filenames automatically use the version from `package.json`. Generated
+`out/` and `release/` directories must not be committed.
 
 ## Project structure
 
