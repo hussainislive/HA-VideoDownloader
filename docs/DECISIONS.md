@@ -238,3 +238,29 @@ fake downloads in one run and repeatedly surfaced the application window. The
 one measured result remains documented for transparency, but it is not a
 release blocker. Finite startup, idle/active resource, frame-rate, 5,000-row,
 live-engine, and regression checks remain required.
+
+## ADR-023 — Ship yt-dlp's unpackaged macOS runtime
+
+**Status:** Accepted · **Date:** 2026-10-13
+
+On the owner's Intel Mac, the supplied one-file `yt-dlp_macos` takes 26–28
+seconds even for `--version` on every invocation. The checksum-verified official
+`yt-dlp_macos.zip` starts in about 0.42 seconds after its first macOS security
+scan; the same three owner-supplied links then extract in about 2.8–3.3 seconds.
+Mac builds stage that official unpackaged release outside the read-only
+`binaries/` tree, package it as a resource, and install a versioned writable
+copy in `userData`. The updater must fetch and checksum the matching unpackaged
+release because upstream marks that form as unable to self-update. Windows
+retains the supplied standalone executable until it can be measured on Windows.
+
+## ADR-024 — Reuse fresh probe data for a first download attempt
+
+**Status:** Accepted · **Date:** 2026-10-13
+
+The main process keeps the full probe JSON for a short time and supplies it to
+yt-dlp with `--load-info-json` on the first attempt. A stale, rejected, or
+unavailable cached source falls back to the ordinary URL extraction path.
+Probe JSON remains outside queue persistence and renderer IPC because it can
+contain time-limited media URLs. The Queue stays in `starting` until real
+transfer progress arrives, and the first progress snapshot is emitted
+immediately so a short download is not hidden by the normal 200 ms batch.

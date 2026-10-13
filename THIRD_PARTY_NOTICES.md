@@ -3,18 +3,21 @@
 HA Premium Video Downloader is distributed under GNU GPL version 3 or later.
 It includes or is built with the open-source projects listed below. Each project
 retains its own copyright and license. This inventory was generated from the
-locked 1.0.0 dependency graph and the actual bundled engine files on
-2026-10-12.
+locked 1.0.1 dependency graph and the actual bundled engine files on
+2026-10-13.
 
 ## Download engines
 
 ### yt-dlp 2026.08.19
 
-The macOS universal2 `yt-dlp_macos` binary and Windows x64 `yt-dlp.exe` come
+The macOS universal2 `yt-dlp_macos` fallback binary, its official unpackaged
+`yt-dlp_macos.zip` runtime, and Windows x64 `yt-dlp.exe` come
 from the [official yt-dlp release](https://github.com/yt-dlp/yt-dlp/releases/tag/2026.08.19).
 yt-dlp is released under the Unlicense. The PyInstaller executables also carry
 the third-party licenses compiled into the upstream release; consult the
 release's `THIRD_PARTY_LICENSES.txt` for that complete asset-level inventory.
+The unpackaged macOS runtime includes this file under
+`Contents/Resources/mac-runtime/macos-<arch>/_internal/`.
 The Unlicense is GPL-compatible.
 
 ### FFmpeg 9.0.2

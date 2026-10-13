@@ -1,8 +1,11 @@
-import { mkdir, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
 const args = process.argv.slice(2)
-const url = args.at(-1) ?? ''
+const cachedInfoIndex = args.indexOf('--load-info-json')
+const cachedInfo =
+  cachedInfoIndex >= 0 ? JSON.parse(await readFile(args[cachedInfoIndex + 1], 'utf8')) : undefined
+const url = cachedInfo?.webpage_url ?? args.at(-1) ?? ''
 const valueAfter = (flag) => {
   const index = args.indexOf(flag)
   return index >= 0 ? args[index + 1] : undefined
@@ -40,7 +43,9 @@ if (args.includes('-J')) {
       title: url.includes('vertical') ? 'Fake Vertical Video' : 'Fake Video',
       uploader: 'HA Test Engine',
       duration: 10,
-      webpage_url: url,
+      webpage_url: url.includes('cached-only-canonical')
+        ? 'https://example.test/canonical-target'
+        : url,
       extractor_key: 'Fake',
       formats: [
         {
@@ -68,6 +73,15 @@ if (args.includes('-J')) {
 
 const template = valueAfter('-o')
 if (!template) process.exit(2)
+if (url.includes('cached-only') && cachedInfoIndex < 0) {
+  process.stderr.write('ERROR: cached metadata was not reused\n')
+  process.exit(1)
+}
+if (url.includes('cache-expired') && cachedInfoIndex >= 0) {
+  process.stderr.write('ERROR: HTTP Error 403: Forbidden\n')
+  process.exit(1)
+}
+if (url.includes('prepare-slow')) await new Promise((resolve) => setTimeout(resolve, 500))
 const outputDir = dirname(template)
 await mkdir(outputDir, { recursive: true })
 const audioFormat = valueAfter('--audio-format')

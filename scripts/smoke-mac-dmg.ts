@@ -1,9 +1,9 @@
 import { spawn } from 'node:child_process'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 
-import { _electron as electron, type ElectronApplication } from '@playwright/test'
+import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test'
 import { z } from 'zod'
 
 const productName = 'HA Premium Video Downloader'
@@ -32,6 +32,23 @@ function mountPoint(plist: string): string {
   return match[1]
 }
 
+async function verifyLiveFacebook(page: Page): Promise<void> {
+  await page.getByRole('tab', { name: 'Downloader' }).click()
+  await page
+    .getByLabel('Video or audio link')
+    .fill('https://www.facebook.com/reel/4849851438576607')
+  await page.getByTestId('media-preview').waitFor({ state: 'visible', timeout: 90_000 })
+  await page.getByRole('button', { name: /^Download Now/u }).click()
+  await page.getByRole('tab', { name: /Queue/u }).click()
+  await page.locator('[data-state="completed"]').waitFor({ state: 'visible', timeout: 120_000 })
+  const snapshot = await page.evaluate(() => window.api.downloads.list())
+  if (!snapshot.ok || !snapshot.value.jobs[0]?.filePath)
+    throw new Error('The packaged app did not report a saved file')
+  if ((await stat(snapshot.value.jobs[0].filePath)).size === 0)
+    throw new Error('The packaged app saved an empty file')
+  process.stdout.write('Packaged Facebook reel: preview and non-empty download verified\n')
+}
+
 async function main(): Promise<void> {
   if (process.platform !== 'darwin') throw new Error('The DMG smoke test requires macOS')
   const architecture = process.argv[2]
@@ -47,6 +64,25 @@ async function main(): Promise<void> {
     `HA-Premium-Video-Downloader-${version}-mac-${architecture}.dmg`,
   )
   const userData = await mkdtemp(join(tmpdir(), 'ha-packaged-smoke-'))
+  const downloadDir = join(userData, 'downloads')
+  await mkdir(downloadDir)
+  await writeFile(
+    join(userData, 'settings.json'),
+    JSON.stringify({
+      schemaVersion: 2,
+      downloadDir,
+      defaultKind: 'video',
+      defaultQuality: 1080,
+      defaultContainer: 'mp4',
+      defaultAudioFormat: 'mp3',
+      defaultAudioBitrate: 320,
+      maxConcurrent: 2,
+      autoPasteClipboard: false,
+      notifyOnComplete: false,
+      embedMetadata: false,
+      keepWindowOnTop: false,
+    }),
+  )
   const mount = mountPoint(
     await run('hdiutil', ['attach', '-plist', '-nobrowse', '-readonly', dmg]),
   )
@@ -88,6 +124,7 @@ async function main(): Promise<void> {
     await page.getByRole('tab', { name: 'About' }).click()
     await page.getByText(`v${version}`, { exact: false }).waitFor({ state: 'visible' })
     process.stdout.write(`${basename(dmg)}: mounted, launched, engine ready, version verified\n`)
+    if (process.argv.includes('--live-facebook')) await verifyLiveFacebook(page)
   } finally {
     await app?.close().catch(() => undefined)
     await run('hdiutil', ['detach', mount])

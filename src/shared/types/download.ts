@@ -43,6 +43,7 @@ export interface DownloadJob {
   stallRetries: number
   usedContainerFallback: boolean
   usedGenericFallback: boolean
+  usedCachedProbe?: boolean | undefined
 }
 
 export interface EnqueueDownloadInput {

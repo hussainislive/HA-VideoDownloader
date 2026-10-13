@@ -99,7 +99,7 @@ export const COPY = {
     finished: 'Finished',
     statuses: {
       queued: (position?: number) => `Queued${position ? ` · #${position}` : ''}`,
-      fetching: 'Fetching',
+      fetching: 'Preparing source…',
       downloading: 'Downloading',
       converting: 'Converting to audio…',
       merging: 'Merging video + audio…',

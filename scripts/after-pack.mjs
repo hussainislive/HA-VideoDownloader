@@ -2,6 +2,18 @@ import { spawn } from 'node:child_process'
 import { chmod, readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
+async function nativeFiles(folder) {
+  const entries = await readdir(folder, { withFileTypes: true })
+  const paths = await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(folder, entry.name)
+      if (entry.isDirectory()) return nativeFiles(path)
+      return entry.isFile() && /(?:\.so|\.dylib)$/u.test(entry.name) ? [path] : []
+    }),
+  )
+  return paths.flat()
+}
+
 function run(file, args) {
   return new Promise((resolve, reject) => {
     const child = spawn(file, args, {
@@ -34,6 +46,25 @@ export default async function afterPack(context) {
   const resources = join(binaryRoot, folders[0])
   for (const name of ['yt-dlp', 'ffmpeg']) {
     const binary = join(resources, name)
+    await stat(binary)
+    await chmod(binary, 0o755)
+    await run('codesign', ['--force', '--sign', '-', binary])
+  }
+  const fastRuntime = join(
+    context.appOutDir,
+    `${context.packager.appInfo.productFilename}.app`,
+    'Contents',
+    'Resources',
+    'mac-runtime',
+    folders[0],
+  )
+  for (const binary of await nativeFiles(join(fastRuntime, '_internal'))) {
+    await run('codesign', ['--force', '--sign', '-', binary])
+  }
+  for (const binary of [
+    join(fastRuntime, '_internal', 'Python'),
+    join(fastRuntime, 'yt-dlp_macos'),
+  ]) {
     await stat(binary)
     await chmod(binary, 0o755)
     await run('codesign', ['--force', '--sign', '-', binary])

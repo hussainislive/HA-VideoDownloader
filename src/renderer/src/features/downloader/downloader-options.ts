@@ -57,11 +57,12 @@ export function createEnqueueInput(
   media: MediaInfo,
   settings: Settings,
   options: DownloaderOptions,
+  sourceUrl: string,
 ): EnqueueDownloadInput {
   const video = selectVideoFormat(media.formats, options.quality)
   const audio = selectAudioFormat(media.formats)
   return {
-    url: media.webpageUrl,
+    url: sourceUrl,
     mediaId: media.id,
     title: media.title,
     ...(media.uploader ? { uploader: media.uploader } : {}),

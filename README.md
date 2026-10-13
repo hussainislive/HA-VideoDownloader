@@ -7,7 +7,7 @@
 <p align="center">A private desktop home for reliable video and audio downloads.</p>
 
 <p align="center">
-  <img alt="Version 1.0.0" src="https://img.shields.io/badge/version-1.0.0-0fd920" />
+  <img alt="Version 1.0.1" src="https://img.shields.io/badge/version-1.0.1-0fd920" />
   <img alt="GPL version 3 or later" src="https://img.shields.io/badge/license-GPL--3.0--or--later-0fd920" />
   <img alt="macOS and Windows" src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-0d120e" />
   <img alt="Release candidate" src="https://img.shields.io/badge/status-release%20candidate-ffbd2e" />
@@ -16,7 +16,7 @@
 > **Disclaimer.** HA Premium Video Downloader is a local utility intended for personal and educational use. It does not host, store, or distribute any content. You are responsible for making sure you have the right to download any content, and for complying with the terms of the sites you use and with applicable copyright law. The developer accepts no liability for misuse. This project is not affiliated with or endorsed by YouTube, Google, or any other platform, nor by the yt-dlp or FFmpeg projects.
 
 > [!IMPORTANT]
-> The 1.0 release candidate is feature-complete. Intel macOS automation is
+> The 1.0.1 release candidate is feature-complete. Intel macOS automation is
 > verified locally; Apple Silicon and Windows hardware checklists remain before
 > a public release is published.
 
@@ -33,6 +33,7 @@ HA Premium Video Downloader is a free, focused alternative to ad-heavy download 
 - ✅ Local fonts, semantic design tokens, and accessible UI primitives
 - ✅ Keyboard tab navigation and reduced-motion support
 - ✅ Real yt-dlp probing, format selection, size estimation, and friendly errors
+- ✅ Fast macOS engine startup after first-run preparation, with short-lived preview reuse for downloads
 - ✅ Persistent concurrent queue with pause, resume, retry, scoped cancellation, and recovery
 - ✅ Atomic settings/history/queue stores and on-demand engine updates
 - ✅ Typed, zod-validated IPC plus deterministic and live real-binary coverage
@@ -80,7 +81,7 @@ models at the same time during the transition.
 build can run on an Apple Silicon Mac through Rosetta, but it is intended for
 Intel Macs and is not the preferred download for an M-series Mac.
 
-For a local unsigned macOS build, open the DMG and drag the app to Applications. On first launch, right-click the app and choose **Open**. If macOS still blocks it, run:
+For a local unsigned macOS build, open the DMG and drag the app to Applications. If version 1.0.0 is already installed, choose **Replace**; the build command itself does not change the installed app or your downloads. On first launch, right-click the app and choose **Open**. If macOS still blocks it, run:
 
 ```sh
 xattr -cr "/Applications/HA Premium Video Downloader.app"
@@ -117,6 +118,7 @@ in Git.
 - [Git](https://git-scm.com/downloads)
 - [Node.js 24 LTS](https://nodejs.org/) with npm 11 or newer
 - About 2 GB of free space for dependencies and package output
+- Network access on the first macOS build to fetch the official, checksum-verified unpackaged yt-dlp runtime (about 51 MB compressed)
 - The yt-dlp and FFmpeg files described below
 
 Confirm the Node and npm versions before continuing:
@@ -193,6 +195,19 @@ chmod +x binaries/macos-arm64/yt-dlp binaries/macos-arm64/ffmpeg
 xattr -dr com.apple.quarantine binaries
 ```
 
+The `binaries/macos-*` yt-dlp files remain the verified fallback inputs. For
+fast normal use, `npm run dist:mac:*` also downloads the official
+`yt-dlp_macos.zip` release into ignored `.cache/mac-runtime/`, checks its pinned
+SHA-256, and packages its unpacked runtime. You can prepare it ahead of time:
+
+```sh
+npm run prepare:mac-runtime
+```
+
+This does not edit `binaries/` or require Python to be installed separately.
+On an offline development launch, the app can fall back to the original slower
+executable; a release build requires the verified fast runtime.
+
 Verify the files and run the release gate:
 
 ```sh
@@ -222,6 +237,10 @@ release/HA-Premium-Video-Downloader-<version>-mac-arm64.dmg
 
 Each DMG contains only its matching FFmpeg architecture. Test the x64 DMG on an
 Intel Mac and the arm64 DMG on an Apple Silicon Mac before publishing them.
+On a fresh macOS installation, the first engine preparation can take longer
+while macOS checks the new native runtime. Later launches reuse its writable
+copy. Site response times still vary; a fast connection alone cannot guarantee
+every preview in two or three seconds.
 
 ### Create the Windows build
 
@@ -313,7 +332,7 @@ The complete resolved table and compatibility notes live in [`docs/STACK.md`](do
 npm test             # unit and component tests
 npm run test:e2e     # production build + deterministic Electron tests
 npm run check        # complete required quality gate
-npm run test:e2e:live # opt-in real-engine tests; introduced in Phase 2
+npm run test:e2e:live # opt-in real-engine tests, including the three owner-supplied links
 npm run test:e2e:performance # finite release performance suite
 ```
 
@@ -337,6 +356,13 @@ the x64 build through Rosetta, but the arm64 build is the recommended native
 choice.
 
 **Why does the app say “Engine problem”?** The title-bar status is live. Open Settings for detected versions and the engine repair action. In a source checkout, run `npm run verify:binaries` or replace a missing/incompatible owner-supplied binary.
+
+**Why might a link still take a few seconds?** The app no longer pays the old
+26–28-second macOS yt-dlp startup cost on every action. It reuses the preview
+for the first download attempt, but each website still controls how quickly it
+responds, and audio conversion or metadata embedding takes real time. Queue
+shows **Preparing source…** until actual transfer progress arrives. If a
+cached media URL expires, the app retries the ordinary link once.
 
 **Why is a Library row marked “File missing”?** History is preserved when a downloaded file is moved or deleted outside the app. Play and Open Location stay disabled until the entry is removed or the file is restored.
 

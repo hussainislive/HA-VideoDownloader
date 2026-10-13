@@ -8,6 +8,7 @@ import { BinaryService } from '../engine/binaries'
 import { EngineUpdater } from '../engine/updater'
 import { YtdlpDownloadService } from '../engine/ytdlp/download'
 import { MediaProbeService } from '../engine/ytdlp/probe'
+import { ProbeCache } from '../engine/ytdlp/probe-cache'
 import { appIconPath } from '../resources'
 import { formatDiagnosticInfo } from './diagnostics'
 import { HistoryStore } from './history-store'
@@ -19,6 +20,7 @@ export class AppServices {
   readonly settings = new SettingsStore(app.getPath('userData'), app.getPath('downloads'))
   readonly history = new HistoryStore(app.getPath('userData'))
   readonly queue = new QueueStore(app.getPath('userData'))
+  readonly probeCache = new ProbeCache()
   probe?: MediaProbeService
   updater?: EngineUpdater
   downloads?: DownloadManager
@@ -56,12 +58,12 @@ export class AppServices {
       this.settings.initialize(),
       this.history.initialize(),
     ])
-    this.probe = new MediaProbeService(this.binaries)
+    this.probe = new MediaProbeService(this.binaries, undefined, this.probeCache)
     this.updater = new EngineUpdater(this.binaries)
     this.downloads = new DownloadManager(
       this.queue,
       this.history,
-      new YtdlpDownloadService(this.binaries),
+      new YtdlpDownloadService(this.binaries, undefined, undefined, this.probeCache),
       {
         completed: (job) => this.#notify(job, 'Download complete'),
         failed: (job) => this.#notify(job, 'Download failed'),

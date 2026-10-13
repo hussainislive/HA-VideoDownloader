@@ -2,7 +2,7 @@ import type { DownloadJob, DownloadState } from '@shared/types/download'
 
 const ALLOWED: Readonly<Record<DownloadState, readonly DownloadState[]>> = {
   queued: ['starting', 'canceled'],
-  starting: ['downloading', 'paused', 'failed', 'canceled'],
+  starting: ['downloading', 'processing', 'paused', 'completed', 'failed', 'canceled'],
   downloading: ['processing', 'paused', 'completed', 'failed', 'canceled'],
   processing: ['paused', 'completed', 'failed', 'canceled'],
   paused: ['queued', 'canceled'],

@@ -69,6 +69,7 @@ export class DownloadManager {
       stallRetries: 0,
       usedContainerFallback: false,
       usedGenericFallback: false,
+      usedCachedProbe: false,
     }
     this.#jobs.push(job)
     this.#changed(true)
@@ -177,7 +178,7 @@ export class DownloadManager {
       onProgress: (progress) => this.#onProgress(current.id, progress),
     })
     this.#active.set(current.id, run)
-    this.#replace(transitionJob(current, 'downloading', process.env.NODE_ENV !== 'production'))
+    this.#replace({ ...current, usedCachedProbe: run.usedCachedProbe === true })
     this.#changed(true)
     const settling = run.completion.then((result) => this.#finish(current.id, result))
     this.#settling.set(current.id, settling)
@@ -193,9 +194,16 @@ export class DownloadManager {
   #onProgress(id: string, progress: DownloadProgress): void {
     const job = this.#require(id)
     const processing = progress.phase !== 'downloading' && progress.phase !== 'queued'
-    const state = processing && job.state === 'downloading' ? 'processing' : job.state
+    const transferStarted =
+      progress.phase === 'downloading' &&
+      (progress.downloadedBytes !== undefined || progress.percent !== undefined)
+    const state = processing
+      ? 'processing'
+      : transferStarted && job.state === 'starting'
+        ? 'downloading'
+        : job.state
     this.#replace({ ...job, state, progress: { ...job.progress, ...progress } })
-    this.#changed(false)
+    this.#changed(state !== job.state)
   }
 
   async #finish(id: string, result: Awaited<DownloadRun['completion']>): Promise<void> {

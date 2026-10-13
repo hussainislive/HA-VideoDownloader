@@ -1,7 +1,9 @@
 import { spawn } from 'node:child_process'
 import { constants } from 'node:fs'
-import { access, readdir, stat } from 'node:fs/promises'
+import { access, readdir, readFile, stat } from 'node:fs/promises'
 import { basename, join } from 'node:path'
+
+import { BUNDLED_MAC_RUNTIME_VERSION } from '../src/main/engine/mac-runtime-release'
 
 type MacArchitecture = 'arm64' | 'x64'
 
@@ -66,28 +68,43 @@ async function main(): Promise<void> {
 
   const ffmpeg = join(binaryRoot, expectedFolder, 'ffmpeg')
   const ytdlp = join(binaryRoot, expectedFolder, 'yt-dlp')
+  const fastRuntime = join(resources, 'mac-runtime', expectedFolder)
+  const fastYtdlp = join(fastRuntime, 'yt-dlp_macos')
+  const fastPython = join(fastRuntime, '_internal', 'Python')
   const executable = join(appPath, 'Contents', 'MacOS', basename(appPath, '.app'))
   await Promise.all([
     assertExecutable(ffmpeg),
     assertExecutable(ytdlp),
+    assertExecutable(fastYtdlp),
+    assertExecutable(fastPython),
     assertExecutable(executable),
   ])
-  const [ffmpegArch, ytdlpArch, appArch] = await Promise.all([
+  const [ffmpegArch, ytdlpArch, fastArch, pythonArch, appArch] = await Promise.all([
     assertArchitecture(ffmpeg, architecture, false),
     assertArchitecture(ytdlp, architecture, true),
+    assertArchitecture(fastYtdlp, architecture, true),
+    assertArchitecture(fastPython, architecture, true),
     assertArchitecture(executable, architecture, false),
     run('codesign', ['-dv', ffmpeg]),
     run('codesign', ['-dv', ytdlp]),
+    run('codesign', ['-v', fastYtdlp]),
+    run('codesign', ['-v', fastPython]),
+    access(join(fastRuntime, '_internal', 'THIRD_PARTY_LICENSES.txt'), constants.R_OK),
     access(join(resources, 'licenses', 'LICENSE'), constants.R_OK),
     access(join(resources, 'licenses', 'THIRD_PARTY_NOTICES.md'), constants.R_OK),
     access(join(resources, 'icon.png'), constants.R_OK),
   ])
+  const runtimeVersion = (await readFile(join(fastRuntime, '.ha-version'), 'utf8')).trim()
+  if (runtimeVersion !== BUNDLED_MAC_RUNTIME_VERSION)
+    throw new Error(`Expected macOS yt-dlp ${BUNDLED_MAC_RUNTIME_VERSION}, found ${runtimeVersion}`)
   process.stdout.write(
     [
       `Package: ${appPath}`,
       `App: ${appArch}`,
       `FFmpeg: ${ffmpegArch}`,
       `yt-dlp: ${ytdlpArch}`,
+      `Fast yt-dlp: ${fastArch}`,
+      `Fast Python: ${pythonArch}`,
     ].join('\n') + '\n',
   )
 }

@@ -63,6 +63,31 @@ test('pastes, probes, selects 1080p MP4, downloads, and opens the folder', async
     .toContain('Fake Video [fake-id].mp4')
 })
 
+test('reuses preview metadata and shows preparation before real progress', async () => {
+  const { page } = current()
+  await addFromDownloader('https://example.test/cached-only')
+  await page.getByRole('button', { name: 'View Queue' }).click()
+  await expect(page.locator('[data-state="completed"]')).toBeVisible()
+  const snapshot = await page.evaluate(() => window.api.downloads.list())
+  expect(snapshot.ok && snapshot.value.jobs[0]?.usedCachedProbe).toBe(true)
+
+  await page.getByRole('tab', { name: /Downloader/u }).click()
+  await addFromDownloader('https://example.test/prepare-slow')
+  await page.getByRole('tab', { name: /Queue/u }).click()
+  const preparing = page.locator('[data-state="starting"]')
+  await expect(preparing).toContainText('Preparing source…')
+  await expect(page.locator('[data-state="completed"]')).toHaveCount(2)
+})
+
+test('reuses preview metadata when a site reports a different canonical URL', async () => {
+  const { page } = current()
+  await addFromDownloader('https://example.test/cached-only-canonical')
+  await page.getByRole('tab', { name: /Queue/u }).click()
+  await expect(page.locator('[data-state="completed"]')).toBeVisible()
+  const snapshot = await page.evaluate(() => window.api.downloads.list())
+  expect(snapshot.ok && snapshot.value.jobs[0]?.usedCachedProbe).toBe(true)
+})
+
 test('pauses, resumes, and confirms cancellation after progress', async () => {
   const { page } = current()
   await addFromDownloader('https://example.test/slow')

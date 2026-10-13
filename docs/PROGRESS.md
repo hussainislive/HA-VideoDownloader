@@ -24,6 +24,8 @@
 
 ## Last session
 
+- 2026-10-13: Completed the Phase 5 engine-latency fix on `phase-5-engine-latency`. The supplied one-file macOS yt-dlp took 26–28 seconds for `--version`; the checksum-verified official unpackaged runtime returned in 0.42 seconds after its first security scan. A five-minute main-process probe cache now reuses fresh media information, retries the ordinary URL if stale/rejected, and keeps Queue in **Preparing source…** until real progress. Canonical-URL handling was verified against Facebook/Instagram behavior.
+- 2026-10-13: Node 24.21.0 `npm run check` passed (111 Vitest tests, 35 deterministic Electron E2E tests); all six opt-in live tests passed, including the owner's Facebook, Instagram, and YouTube links. Three finite performance tests passed with the documented Intel idle-memory deviation unchanged. The 1.0.1 x64 DMG passed static checks, a mounted launch, and a real packaged Facebook download; the arm64 DMG passed static checks only. Both DMGs passed `hdiutil verify` and SHA-256 verification. Only the four superseded 1.0.0 DMG/blockmap artifacts were removed; the installed v1 app and user downloads were not changed.
 - 2026-10-09: Phase 1 started on `phase-1-foundation`; baseline typecheck could not run because the repository had no `package.json` yet.
 - 2026-10-10: Completed the secure shell, design system, strict tooling, 27 unit/component tests, six Electron E2E tests, documentation, development smoke, x64 packaging, and read-only DMG launch smoke.
 - 2026-10-10: Fixed a sandboxed-preload module mismatch and added a regression test for the rapid-close startup fade that had produced repeated main-process error dialogs.
@@ -91,6 +93,15 @@
 - [x] Complete release, platform-test, QA, open-source, README, changelog, architecture, testing, and provenance documentation.
 - [x] Pass `npm run check`, live tests, build/package smoke, audit, and the complete Phase 5 Definition of Done.
 
+## Phase 5 engine-latency fix plan
+
+- [x] Measure the bundled engine and the official unpackaged macOS alternative, then select a verified runtime path.
+- [x] Keep preview metadata in the main process for the download and provide a safe fresh-URL fallback.
+- [x] Report preparation, transfer, and post-processing accurately in the Queue, with immediate first progress.
+- [x] Add focused regression tests and run deterministic Electron Playwright plus opt-in live checks of the owner's three links.
+- [x] Run all quality gates, build and verify new versioned macOS DMGs, then retire only superseded release artifacts.
+- [x] Update README, performance and architecture documentation, decisions, testing notes, changelog, and release checksums.
+
 ## Known issues
 
 - The Intel baseline uses 388.06 MB idle working-set memory versus the original 300 MB target; the addendum classifies this measured Intel-only deviation as non-blocking.
@@ -100,4 +111,5 @@
 
 - Windows 10/11 behavior and packaging will require owner or CI verification.
 - Apple Silicon runtime behavior requires the owner's friend to follow the Phase 5 test guide.
+- The 1.0.1 Windows installer cannot be built on this macOS host under the project's native-host rule; it still requires a Windows machine.
 - Run the public-release checklist before changing the repository from private to public.

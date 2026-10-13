@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { DownloadManager } from '@main/downloads/download-manager'
 import type { DownloadBinaryProvider } from '@main/engine/ytdlp/download'
 import { YtdlpDownloadService } from '@main/engine/ytdlp/download'
+import { ProbeCache } from '@main/engine/ytdlp/probe-cache'
 import { HistoryStore } from '@main/services/history-store'
 import { QueueStore } from '@main/services/queue-store'
 import type { DownloadJob, EnqueueDownloadInput } from '@shared/types/download'
@@ -50,13 +51,17 @@ async function waitFor(
   throw new Error('Timed out waiting for job state')
 }
 
-async function createManager(directory: string, stallMs = 300): Promise<DownloadManager> {
+async function createManager(
+  directory: string,
+  stallMs = 300,
+  cache?: ProbeCache,
+): Promise<DownloadManager> {
   const history = new HistoryStore(directory)
   await history.initialize()
   const manager = new DownloadManager(
     new QueueStore(directory),
     history,
-    new YtdlpDownloadService(provider, undefined, stallMs),
+    new YtdlpDownloadService(provider, undefined, stallMs, cache),
     { completed: () => undefined, failed: () => undefined, activity: () => undefined },
   )
   await manager.initialize(2)
@@ -84,6 +89,40 @@ describe('DownloadManager with the deterministic engine', () => {
     expect(job.filePath).toBeTruthy()
     expect(job.fileSizeBytes).toBe((await stat(job.filePath ?? '')).size)
     expect(await readdir(directory)).toContain('Fake Video [fake-id].mp4')
+  })
+
+  it('keeps a job preparing until the first real transfer progress arrives', async () => {
+    const manager = await createManager(directory, 1_000)
+    manager.enqueue(input(directory, 'prepare-slow'))
+    expect(manager.snapshot().jobs[0]?.state).toBe('starting')
+    const active = await waitFor(manager, ({ state }) => state === 'downloading')
+    expect(active.progress.downloadedBytes).toBeGreaterThan(0)
+    await waitFor(manager, ({ state }) => state === 'completed')
+  })
+
+  it('uses fresh probe JSON and retries the URL when cached media expires', async () => {
+    const cache = new ProbeCache()
+    for (const path of ['cached-only', 'cache-expired']) {
+      const request = input(directory, path)
+      cache.set(
+        request.url,
+        {
+          id: request.mediaId,
+          title: request.title,
+          webpageUrl: request.url,
+          extractor: 'Fake',
+          isLive: false,
+          isPlaylistEntry: false,
+          formats: [],
+        },
+        JSON.stringify({ id: request.mediaId, title: request.title, webpage_url: request.url }),
+      )
+    }
+    const manager = await createManager(directory, 300, cache)
+    manager.enqueue(input(directory, 'cache-expired'))
+    const recovered = await waitFor(manager, ({ state }) => state === 'completed')
+    expect(recovered.attempt).toBe(2)
+    expect(recovered.usedCachedProbe).toBe(false)
   })
 
   it('drops completed queue cards after restart while history remains authoritative', async () => {

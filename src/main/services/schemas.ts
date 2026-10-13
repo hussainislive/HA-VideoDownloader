@@ -88,6 +88,7 @@ export const DownloadJobSchema = z.object({
   stallRetries: z.number().int().nonnegative(),
   usedContainerFallback: z.boolean(),
   usedGenericFallback: z.boolean().default(false),
+  usedCachedProbe: z.boolean().optional(),
 })
 
 export const HistoryItemSchema = z.object({
