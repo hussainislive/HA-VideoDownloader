@@ -50,6 +50,43 @@ gates, one 30-minute run increased Electron's working set from 407.27 MB to
 downloads. The result is retained here for transparency, but the test and its
 threshold are no longer release requirements and must not be run again.
 
+## 1.0.1 engine-latency correction
+
+The supplied standalone macOS yt-dlp took 26.47 seconds for a simple
+`--version` call on this Intel Mac and 28.42 seconds when repeated. This was a
+per-process startup cost, not a large-video transfer cost. The pinned official
+unpackaged runtime took 0.42 seconds for `--version` after one initial macOS
+security scan. The first use of a new runtime copy can still take longer.
+
+After preserving the pasted URL through enqueue and reusing the fresh preview
+JSON for the first download attempt, the real Electron UI and the owner's three
+URLs measured:
+
+| Site      | Preview ready | Enqueue → completed file | Output check            |
+| --------- | ------------: | -----------------------: | ----------------------- |
+| Facebook  |        2.84 s |                   2.07 s | Non-empty MP4           |
+| Instagram |        5.92 s |                   3.93 s | Non-empty MP4           |
+| YouTube   |        3.86 s |                   3.90 s | Non-empty converted MP3 |
+
+Measured on 2026-10-13 with Playwright driving the real Electron app, using
+exactly the three owner-supplied links. Timings start at link entry and at the
+Download Now click respectively; they are one sample each, not a benchmark
+distribution or guarantee. Site throttling, geographic routing, login changes,
+format availability, and file size can change them. The test's initial app
+startup is excluded from the per-link preview figures.
+
+A second full live-suite run also completed all three: Facebook 2.85 s preview
+/ 1.93 s download, Instagram 4.37 s / 4.39 s, and YouTube 3.35 s / 4.92 s.
+That variation is why this release does not claim a fixed two- or three-second
+limit for third-party sites.
+
+The finite 1.0.1 performance rerun passed all three cases: window shown in
+1,070 ms, input interactive in 1,291 ms, idle CPU 0.322%, active CPU 1.316%,
+62 progress frames per second, 13 mounted Library rows, 62 scroll frames per
+second, and a 9 ms search. Idle working set was 387.76 MB, essentially flat
+against the original 388.06 MB Intel baseline and still above the original
+300 MB target. No soak was run.
+
 ## Changes made during the audit
 
 - Library search now updates immediately and filters metadata before main-

@@ -9,7 +9,8 @@ import { type ProcessResult, ProcessRunner, type ProcessRunOptions } from './pro
 type UpdateBinaries = Pick<
   BinaryService,
   'refreshStatus' | 'restoreBundledCopy' | 'status' | 'ytdlpInvocation'
->
+> &
+  Partial<Pick<BinaryService, 'usesFastMacRuntime' | 'updateMacRuntime'>>
 
 interface UpdateRunner {
   run(
@@ -38,6 +39,17 @@ export class EngineUpdater {
   async checkAndUpdate(): Promise<Result<EngineUpdateResult>> {
     const before = this.binaries.status.ytdlp.version
     if (!before) return err(updateError('The installed engine has no readable version.'))
+    if (this.binaries.usesFastMacRuntime?.() && this.binaries.updateMacRuntime) {
+      try {
+        await this.binaries.updateMacRuntime()
+        const after = (await this.binaries.refreshStatus()).ytdlp.version
+        if (!after) return err(updateError('The downloaded engine did not pass verification.'))
+        return ok({ before, after, updated: before !== after })
+      } catch (error) {
+        logger.error('Fast macOS engine update failed', error)
+        return err(updateError('The previous verified engine remains installed.'))
+      }
+    }
     const invocation = this.binaries.ytdlpInvocation(['-U'])
     try {
       const update = await this.runner.run(invocation.file, invocation.args, {

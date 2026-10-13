@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-13
+
+### Changed
+
+- Package yt-dlp's checksum-verified unpackaged macOS runtime for fast repeat launches and keep the original architecture-specific binary as a fallback.
+- Reuse fresh preview metadata for the first download attempt while keeping time-limited media URLs private to the main process.
+- Show **Preparing source…** until real transfer progress starts and emit the first progress snapshot immediately.
+- Keep the user's original link through enqueue, even when a site reports a different canonical URL.
+
+### Fixed
+
+- Remove the repeated 26–28-second one-file yt-dlp startup cost from normal macOS preview and download actions after first-run preparation.
+- Retry the ordinary source URL when cached media information has expired or is rejected.
+
+### Verified
+
+- Real Electron Playwright preview and download flows for the owner's Facebook reel, Instagram reel, and YouTube video; deterministic cache, fallback, and Queue-state regressions.
+
 ## [1.0.0] - 2026-10-12
 
 ### Added

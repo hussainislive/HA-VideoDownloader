@@ -5,14 +5,14 @@ import type { EngineStatus } from '@shared/types/engine'
 import { app } from 'electron'
 
 import { logger } from '../logger'
+import { existingOverride, exists, firstVersionLine, resourcesRoot } from './binary-locations'
 import {
   type BundledBinaryPaths,
   bundledBinaryPaths,
-  isAccessible,
   missingBundledBinaries,
-  packagedBinaryRoot,
   resolveBundledBinaryPaths,
 } from './binary-resolver'
+import { bundledMacRuntimePath, developmentMacRuntimePath, MacRuntime } from './mac-runtime'
 import { ProcessRunner } from './process-runner'
 
 export { binaryFolderFor, packagedBinaryRoot, resolveBundledBinaryPaths } from './binary-resolver'
@@ -23,38 +23,13 @@ export interface EnginePaths {
   testScript?: string
 }
 
-function existingOverride(name: 'HA_YTDLP_PATH' | 'HA_FFMPEG_PATH'): string | undefined {
-  return app.isPackaged ? undefined : process.env[name]
-}
-
-async function exists(path: string, executable = process.platform !== 'win32'): Promise<boolean> {
-  return isAccessible(path, executable)
-}
-
-async function resourcesRoot(): Promise<string> {
-  if (app.isPackaged) return packagedBinaryRoot(process.resourcesPath)
-  const appRoot = app.getAppPath()
-  const candidates = [appRoot, join(appRoot, '..', '..'), process.cwd()]
-  for (const candidate of new Set(candidates)) {
-    const root = join(candidate, 'binaries')
-    if (await exists(root, false)) return root
-  }
-  return join(appRoot, 'binaries')
-}
-
-function firstVersionLine(output: string): string | undefined {
-  return output
-    .split(/\r?\n/u)
-    .find((line) => line.trim().length > 0)
-    ?.trim()
-}
-
 export class BinaryService {
   readonly #runner: ProcessRunner
   #paths?: EnginePaths
   #resolvedYtdlpVersion: string | undefined
   #status?: EngineStatus
   #statusError?: EngineStatus['error']
+  #macRuntime: MacRuntime | undefined
 
   constructor(runner = new ProcessRunner()) {
     this.#runner = runner
@@ -90,6 +65,7 @@ export class BinaryService {
 
   async #resolvePaths(): Promise<EnginePaths> {
     this.#resolvedYtdlpVersion = undefined
+    this.#macRuntime = undefined
     const binaryRoot = await resourcesRoot()
     const resolvedBundle = await resolveBundledBinaryPaths(binaryRoot)
     const bundled = resolvedBundle.ok ? resolvedBundle.value : bundledBinaryPaths(binaryRoot)
@@ -118,6 +94,10 @@ export class BinaryService {
     ) {
       this.#statusError = resolvedBundle.ok ? this.#missingEngineError() : resolvedBundle.error
     }
+    const fastYtdlp = await this.#prepareFastMacRuntime(
+      Boolean(this.#statusError || ytdlpOverride || testScript),
+    )
+    if (fastYtdlp) return this.#enginePaths(fastYtdlp, bundled.ffmpeg, undefined, ffmpegOverride)
     if (!this.#statusError)
       await this.#prepareWritableYtdlp(bundled.ytdlp, installedYtdlp, ytdlpOverride, testScript)
     return this.#enginePaths(
@@ -127,6 +107,22 @@ export class BinaryService {
       ffmpegOverride,
       testScript,
     )
+  }
+
+  async #prepareFastMacRuntime(skip: boolean): Promise<string | undefined> {
+    if (process.platform !== 'darwin' || skip) return undefined
+    try {
+      const source = app.isPackaged
+        ? bundledMacRuntimePath(process.resourcesPath, process.arch)
+        : developmentMacRuntimePath(process.cwd())
+      const runtime = new MacRuntime(app.getPath('userData'))
+      const fastYtdlp = await runtime.prepare(source)
+      this.#macRuntime = runtime
+      return fastYtdlp
+    } catch (error) {
+      logger.warn('Fast macOS engine unavailable; using the bundled executable', error)
+      return undefined
+    }
   }
 
   #enginePaths(
@@ -216,6 +212,16 @@ export class BinaryService {
 
   async refreshStatus(): Promise<EngineStatus> {
     return this.initialize()
+  }
+
+  usesFastMacRuntime(): boolean {
+    return this.#macRuntime !== undefined
+  }
+
+  async updateMacRuntime(): Promise<string> {
+    const current = this.status.ytdlp.version
+    if (!this.#macRuntime || !current) throw new Error('Fast macOS runtime is unavailable')
+    return this.#macRuntime.update(current)
   }
 
   async restoreBundledCopy(): Promise<void> {

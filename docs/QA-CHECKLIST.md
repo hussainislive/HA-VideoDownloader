@@ -7,8 +7,8 @@ artifact SHA-256 plus **Help → Copy diagnostic info** output.
 
 | Platform            | Build/install | Core download                     | OS integration                        | Status                        |
 | ------------------- | ------------- | --------------------------------- | ------------------------------------- | ----------------------------- |
-| macOS Intel         | x64 DMG       | video, audio, pause/resume/cancel | traffic lights, Dock, notification    | Automated smoke/live verified |
-| macOS Apple Silicon | arm64 DMG     | video, audio, pause/resume/cancel | native Kind=Apple, Dock, notification | Needs owner/friend            |
+| macOS Intel         | x64 DMG       | video, audio, pause/resume/cancel | traffic lights, Dock, notification    | v1.0.1 packaged live verified |
+| macOS Apple Silicon | arm64 DMG     | video, audio, pause/resume/cancel | native Kind=Apple, Dock, notification | v1.0.1 static only            |
 | Windows 10 x64      | NSIS x64      | video, audio, pause/resume/cancel | controls, taskbar, notification       | Needs owner                   |
 | Windows 11 x64      | NSIS x64      | video, audio, pause/resume/cancel | Snap, controls, taskbar, notification | Needs owner                   |
 
@@ -34,3 +34,5 @@ artifact SHA-256 plus **Help → Copy diagnostic info** output.
 - [ ] Fresh install and uninstall succeed; user downloads remain after uninstall.
 - [ ] GPL `LICENSE`, `THIRD_PARTY_NOTICES.md`, target engine, and icon are present.
 - [ ] Package smoke verifier reports only the expected engine architecture.
+- [ ] On Apple Silicon, confirm the unpackaged yt-dlp runtime launches natively
+      and completes a preview, video, and audio download after first launch.

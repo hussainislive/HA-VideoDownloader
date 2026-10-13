@@ -155,7 +155,12 @@ export function useDownloader(): DownloaderController {
   const enqueue = useCallback(
     async (preserveUrl: boolean): Promise<void> => {
       if (!media || !settings) return
-      const input = createEnqueueInput(media, settings, options)
+      const input = createEnqueueInput(
+        media,
+        settings,
+        options,
+        normalizeMediaUrl(url) ?? media.webpageUrl,
+      )
       setIsEnqueuing(true)
       const result = await window.api.downloads.enqueue(input)
       setIsEnqueuing(false)
@@ -170,7 +175,7 @@ export function useDownloader(): DownloaderController {
       })
       if (!preserveUrl) setUrl('', false)
     },
-    [media, options, setUrl, settings, showToast],
+    [media, options, setUrl, settings, showToast, url],
   )
 
   const submit = useCallback(

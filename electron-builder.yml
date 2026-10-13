@@ -14,6 +14,8 @@ asar: true
 afterPack: scripts/after-pack.mjs
 mac:
   extraResources:
+    - from: .cache/mac-runtime/2026.08.19
+      to: mac-runtime/macos-${arch}
     - from: binaries/macos-${arch}
       to: binaries/macos-${arch}
       filter:

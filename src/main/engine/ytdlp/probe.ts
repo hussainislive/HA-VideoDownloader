@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { type BinaryService } from '../binaries'
 import { type ProcessHandle, ProcessRunner } from '../process-runner'
 import { mapEngineError } from './errors'
+import { ProbeCache } from './probe-cache'
 
 const FormatSchema = z.looseObject({
   format_id: z.union([z.string(), z.number()]).transform(String),
@@ -118,12 +119,12 @@ export function parseProbeJson(json: string, requestedUrl: string): Result<Media
 }
 
 export class MediaProbeService {
-  readonly #cache = new Map<string, MediaInfo>()
   #active: { canceled: boolean; handle: ProcessHandle } | undefined
 
   constructor(
     private readonly binaries: BinaryService,
     private readonly runner = new ProcessRunner(),
+    private readonly cache = new ProbeCache(),
   ) {}
 
   async cancel(): Promise<void> {
@@ -141,12 +142,13 @@ export class MediaProbeService {
         retryable: false,
       })
     await this.cancel()
-    const cached = this.#cache.get(url)
+    const cached = this.cache.get(url)
     if (cached) return ok(cached)
     const invocation = this.binaries.ytdlpInvocation([
       '-J',
       '--no-playlist',
       '--no-warnings',
+      '--ignore-config',
       '--skip-download',
       '--',
       url,
@@ -172,7 +174,7 @@ export class MediaProbeService {
         return err({ code: 'CANCELED', message: 'Link inspection was canceled.', retryable: true })
       if (result.code !== 0) return err(mapEngineError(stderr.join('\n')))
       const parsed = parseProbeJson(stdout.join('\n'), url)
-      if (parsed.ok) this.#cache.set(url, parsed.value)
+      if (parsed.ok) this.cache.set(url, parsed.value, stdout.join('\n'))
       return parsed
     } catch (error) {
       this.#active = undefined

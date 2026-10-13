@@ -19,6 +19,14 @@ export function completedJob(job: DownloadJob, filePath: string): DownloadJob {
 
 export function failedOrRetryJob(job: DownloadJob, error: AppError): DownloadJob {
   if (
+    job.usedCachedProbe &&
+    ['HTTP_403_OR_BLOCKED', 'FORMAT_UNAVAILABLE', 'VIDEO_UNAVAILABLE', 'UNKNOWN'].includes(
+      error.code,
+    )
+  ) {
+    return { ...job, state: 'queued', usedCachedProbe: false, error }
+  }
+  if (
     error.code === 'FORMAT_UNAVAILABLE' &&
     job.options.videoFormatId &&
     !job.usedGenericFallback

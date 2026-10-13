@@ -92,10 +92,23 @@ The sandboxed preload is intentionally emitted as CommonJS (`index.cjs`). Electr
 ## Engine ownership
 
 The main process is the sole owner of yt-dlp, FFmpeg, settings, queue state,
-history, filesystem access, notifications, and badges. On first launch it copies
-yt-dlp to `userData/engine`, makes it executable, and removes macOS quarantine
-best-effort. FFmpeg stays in app resources. Only the writable yt-dlp copy can
-self-update; a broken update is replaced by the bundled copy.
+history, filesystem access, notifications, and badges. On macOS the package
+contains the checksum-verified official unpackaged yt-dlp runtime. First launch
+copies it into a versioned `userData/engine/mac-runtime/` folder; later launches
+reuse that writable copy. The supplied standalone executable remains a fallback.
+On-demand macOS updates fetch and verify the official unpackaged archive rather
+than asking that distribution to self-update. Windows retains its writable
+standalone executable and existing self-update path. FFmpeg stays in resources.
+
+The main process also keeps a bounded five-minute preview cache containing the
+original yt-dlp metadata, including time-limited media URLs. The renderer and
+persistent queue receive only validated display metadata. A first download
+attempt passes a private temporary info JSON to yt-dlp and removes it when the
+process ends. If the cached source is rejected, the manager retries the normal
+source URL. The original pasted URL is retained in Queue even when a site
+reports a different canonical URL. Queue reports preparation until genuine
+transfer bytes arrive; the first progress event bypasses the normal 200 ms
+batch so short downloads remain visible.
 
 `ProcessRunner` always uses argument arrays, `shell: false`, and
 `windowsHide: true`. macOS processes start in a dedicated process group so

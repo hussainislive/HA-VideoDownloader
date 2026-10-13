@@ -6,6 +6,7 @@ import { logger } from '../../logger'
 import { type ProcessHandle, ProcessRunner } from '../process-runner'
 import { buildDownloadArgs } from './args'
 import { mapEngineError } from './errors'
+import { type PreparedProbe, type ProbeCache } from './probe-cache'
 import { parseProgressLine, phaseFromOutput, ProgressAccumulator } from './progress'
 
 export interface DownloadCallbacks {
@@ -15,6 +16,7 @@ export interface DownloadCallbacks {
 
 export interface DownloadRun {
   readonly pid: number | undefined
+  readonly usedCachedProbe?: boolean
   readonly completion: Promise<Result<{ filePath: string }>>
   kill(): Promise<void>
 }
@@ -33,19 +35,28 @@ export class YtdlpDownloadService {
     private readonly binaries: DownloadBinaryProvider,
     private readonly runner = new ProcessRunner(),
     private readonly stallMs = 60_000,
+    private readonly probeCache?: ProbeCache,
   ) {}
 
   start(job: DownloadJob, callbacks: DownloadCallbacks): DownloadRun {
+    const prepared = job.attempt === 1 ? this.probeCache?.prepare(job.url, job.mediaId) : undefined
     const invocation = this.binaries.ytdlpInvocation(
-      buildDownloadArgs(job, { ffmpegPath: this.binaries.paths.ffmpeg }),
+      buildDownloadArgs(job, {
+        ffmpegPath: this.binaries.paths.ffmpeg,
+        ...(prepared ? { infoJsonPath: prepared.path } : {}),
+      }),
     )
     const handle = this.runner.start(invocation.file, invocation.args, {
       ...(invocation.env ? { env: invocation.env } : {}),
     })
-    return this.#monitor(handle, callbacks)
+    return this.#monitor(handle, callbacks, prepared)
   }
 
-  #monitor(handle: ProcessHandle, callbacks: DownloadCallbacks): DownloadRun {
+  #monitor(
+    handle: ProcessHandle,
+    callbacks: DownloadCallbacks,
+    prepared?: PreparedProbe,
+  ): DownloadRun {
     let lastActivity = Date.now()
     let filePath: string | undefined
     let stalled = false
@@ -110,6 +121,18 @@ export class YtdlpDownloadService {
         )
         return err(failure)
       })
-    return { pid: handle.pid, completion, kill: () => handle.kill() }
+      .finally(() => {
+        try {
+          prepared?.cleanup()
+        } catch (error) {
+          logger.warn('Could not remove temporary probe data', error)
+        }
+      })
+    return {
+      pid: handle.pid,
+      usedCachedProbe: Boolean(prepared),
+      completion,
+      kill: () => handle.kill(),
+    }
   }
 }

@@ -28,14 +28,16 @@ Audited on macOS Intel on 2026-10-12. Windows runtime conclusions marked
 ## Packaging alignment
 
 - macOS produces independent x64 and arm64 DMGs containing one matching engine
-  folder. The Intel host executes x64 and statically validates arm64.
+  folder plus the official universal unpackaged yt-dlp runtime. The Intel host
+  executes x64 and statically validates arm64, including the runtime's Python
+  executable, architecture, executable permissions, and ad-hoc signatures.
 - Windows NSIS is per-user, allows an install-directory choice, creates desktop
   and Start Menu shortcuts, and leaves external download folders outside the
   uninstaller. It is intentionally built and exercised on Windows only.
 
 ## Static-only items
 
-- Apple Silicon: execute the app/FFmpeg/yt-dlp natively, Activity Monitor Kind,
+- Apple Silicon: execute the app/FFmpeg/unpackaged yt-dlp natively, Activity Monitor Kind,
   Gatekeeper flow, downloads, pause/resume, Dock, notifications.
 - Windows 10/11: `npm ci`, all gates, taskkill behavior, no console flashes,
   custom controls/Snap, taskbar/notifications, long Unicode paths, Defender,

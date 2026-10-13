@@ -83,7 +83,7 @@ describe('DownloadCard', () => {
 
   it.each([
     ['queued', 'Queued · #1'],
-    ['starting', 'Fetching'],
+    ['starting', 'Preparing source…'],
     ['downloading', 'Downloading'],
     ['processing', 'Merging video + audio…'],
     ['paused', 'Paused'],

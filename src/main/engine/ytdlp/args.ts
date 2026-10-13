@@ -5,6 +5,7 @@ import type { DownloadJob } from '@shared/types/download'
 export interface DownloadArgumentsContext {
   ffmpegPath: string
   forceGenericSelector?: boolean
+  infoJsonPath?: string
 }
 
 const PROGRESS_TEMPLATE =
@@ -69,7 +70,6 @@ export function buildDownloadArgs(job: DownloadJob, context: DownloadArgumentsCo
     'after_move:HAFILE|%(filepath)s',
     '--no-simulate',
     ...selectorArguments(job, context.forceGenericSelector === true),
-    '--',
-    job.url,
+    ...(context.infoJsonPath ? ['--load-info-json', context.infoJsonPath] : ['--', job.url]),
   ]
 }

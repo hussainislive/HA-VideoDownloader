@@ -21,7 +21,7 @@ This is the definition-of-done gate. It runs strict TypeScript checks, ESLint wi
 | `npm run test:watch`           | Run Vitest in watch mode                                                     |
 | `npm run test:coverage`        | Generate V8 coverage                                                         |
 | `npm run test:e2e`             | Verify binaries, build, and run non-live Electron tests                      |
-| `npm run test:e2e:live`        | Run opt-in tests tagged `@live`                                              |
+| `npm run test:e2e:live`        | Run opt-in tests tagged `@live`, including real-site latency                 |
 | `npm run test:e2e:performance` | Measure startup, resources, and the 5,000-row Library                        |
 | `npm run verify:binaries`      | Check presence, versions, architecture, permissions, and macOS signing state |
 | `npm run verify:bundle`        | Enforce the 350 KiB gzip renderer-JavaScript budget after a build            |
@@ -56,6 +56,11 @@ Phase 5 unit and integration tests additionally cover architecture-specific
 binary resolution, missing native inputs, Windows system `taskkill` resolution,
 reserved/trailing/Unicode filenames, redacted diagnostics, recursive log
 redaction, and the one-source icon/package verifiers.
+
+The 1.0.1 latency fix adds writable macOS-runtime reuse, private probe-cache
+expiry and cleanup, stale-source fallback, immediate first progress, and
+canonical-URL reuse regressions. The deterministic Electron test confirms the
+Queue says **Preparing source…** until genuine progress arrives.
 
 Phase 2 unit and integration tests additionally cover:
 
@@ -95,9 +100,9 @@ Phase 4 Electron E2E additionally covers:
 - axe checks on populated Library, Settings, and About states plus the existing all-five-screen shell pass;
 - reviewed visual baselines for every screen at 850×600, 1280×800, and 1920×1080, with explicit root and main-content horizontal-overflow assertions.
 
-The final Phase 5 gate contains 106 passing Vitest tests across 28 files and 33
-passing deterministic Electron E2E tests. Five separate live tests exercise
-four engine paths and one complete UI path with the real bundled tools.
+The 1.0.1 gate passed 111 Vitest tests across 30 files and 35 deterministic
+Electron E2E tests. All six opt-in live tests and all three finite performance
+tests passed separately.
 
 axe uses its documented legacy aggregation mode because Playwright's default blank-page aggregator cannot create a second target through Electron automation. The application has no frames, so cross-origin frame coverage is not lost.
 
@@ -143,6 +148,14 @@ download. Phase 3 also launches the real Electron UI, probes the short
 Creative Commons video, downloads it through Downloader and Queue, and verifies
 the completed file exists with non-zero bytes.
 
+The 1.0.1 live Playwright case runs the same Electron UI against the owner's
+Facebook reel, Instagram reel, and YouTube video. It measures preview and
+download-to-completion separately, verifies preview reuse and non-empty output,
+and checks YouTube MP3 output. These URLs are live third-party services, so
+results are observations, not a universal two-second service-level promise.
+This opt-in test is **not** part of `npm run check`; it performs real downloads
+into an isolated temporary profile. The retired 30-minute soak is not run.
+
 ## Verified yt-dlp flags
 
 Phase 2 checked the bundled yt-dlp 2026.08.19 help and exercised the complete
@@ -169,13 +182,19 @@ npm run dist:mac
 After each build, the package verifier inspects executable bits, architecture,
 ad-hoc signatures, bundled licenses, and the icon under the app's
 target-specific `Contents/Resources/binaries/macos-x64` or `macos-arm64`
-directory. `npm run smoke:package:mac:x64` mounts the x64 DMG read-only with an
+directory, plus the unpackaged runtime and Python executable under
+`Contents/Resources/mac-runtime/macos-<arch>`. `npm run smoke:package:mac:x64` mounts the x64 DMG read-only with an
 isolated temporary profile, launches it, waits for the real Engine Ready state,
-verifies v1.0.0 on About, closes it, and detaches the image. This caught and now
+verifies the current package version on About, closes it, and detaches the image. This caught and now
 regression-tests an incorrect packaged binary root that a static inspection
 could not reveal. The arm64 application and engine receive static checks on the
 Intel host and must be executed later on Apple Silicon. Windows packaging and
 runtime behavior are verified on Windows.
+
+For an opt-in real download from the mounted Intel DMG, run
+`npm run smoke:package:mac:x64 -- --live-facebook`. It uses an isolated
+temporary download folder and verifies the completed file is non-empty. This
+passed for v1.0.1. Neither package command runs the retired soak.
 
 ## Updating visual snapshots
 
