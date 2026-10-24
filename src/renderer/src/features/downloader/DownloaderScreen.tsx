@@ -126,7 +126,7 @@ export default function DownloaderScreen(): React.JSX.Element {
 
       <motion.div
         animate={{ opacity: 1, y: 0 }}
-        className="grid min-h-0 flex-1 grid-rows-[minmax(102px,1fr)_154px] gap-3 @min-[1024px]:grid-cols-2 @min-[1024px]:grid-rows-1"
+        className="grid min-h-0 flex-1 grid-rows-[minmax(102px,1fr)_168px] gap-3 @min-[1024px]:grid-cols-2 @min-[1024px]:grid-rows-1"
         initial={{ opacity: 0, y: reduceMotion ? 0 : 7 }}
         transition={{ duration: reduceMotion ? 0.08 : 0.2 }}
       >

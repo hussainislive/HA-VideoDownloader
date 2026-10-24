@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep the Downloader size estimate and metadata checkbox inside the options card with consistent bottom padding.
+
 ## [1.0.1] - 2026-10-13
 
 ### Changed

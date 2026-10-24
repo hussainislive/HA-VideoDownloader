@@ -97,6 +97,31 @@ test('matches Downloader at all required sizes without scrolling', async () => {
   await page.screenshot({ animations: 'disabled', path: join('docs/images/downloader.png') })
 })
 
+test('keeps the options footer inside the card padding at minimum size', async () => {
+  const { page } = current()
+  await readyDownloader()
+  await resize(850, 600)
+
+  const spacing = await page.getByTestId('download-options').evaluate((card) => {
+    const estimate = Array.from(card.querySelectorAll('span')).find((element) =>
+      element.textContent?.startsWith('Estimated size:'),
+    )
+    const checkbox = card.querySelector('label')
+    if (!estimate || !checkbox) throw new Error('Options footer controls were not found')
+
+    const cardBox = card.getBoundingClientRect()
+    const estimateBox = estimate.getBoundingClientRect()
+    const checkboxBox = checkbox.getBoundingClientRect()
+    return {
+      checkboxBottom: cardBox.bottom - checkboxBox.bottom,
+      estimateBottom: cardBox.bottom - estimateBox.bottom,
+    }
+  })
+
+  expect(spacing.checkboxBottom).toBeGreaterThanOrEqual(11)
+  expect(spacing.estimateBottom).toBeGreaterThanOrEqual(11)
+})
+
 test('matches a real paused/queued Queue at all required sizes', async () => {
   const { page } = current()
   await enqueueJobs(3, 'slow-visual')

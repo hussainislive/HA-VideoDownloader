@@ -55,7 +55,7 @@ export function DownloadOptionsCard({
   }))
   return (
     <Card
-      className="flex min-h-[154px] flex-col p-3 @min-[1024px]:self-start"
+      className="flex min-h-[168px] flex-col p-3 @min-[1024px]:self-start"
       data-testid="download-options"
     >
       <div className="flex items-center justify-between gap-3">
@@ -111,7 +111,7 @@ export function DownloadOptionsCard({
           </>
         )}
       </div>
-      <div className="border-line-subtle text-fg-muted mt-2 flex items-center justify-between border-t pt-2 text-[10px]">
+      <div className="border-line-subtle text-fg-muted mt-auto flex items-center justify-between border-t pt-2 text-[10px]">
         <span className="flex items-center gap-1.5">
           <FileDown aria-hidden="true" className="text-accent size-3" />
           {COPY.downloader.estimatedSize}: {estimateIsApproximate ? '~' : ''}
