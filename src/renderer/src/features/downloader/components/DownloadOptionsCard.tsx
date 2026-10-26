@@ -15,7 +15,7 @@ import type {
 import { FileAudio2, FileDown, Video } from 'lucide-react'
 
 const QUALITY_LABELS: Readonly<Record<QualityTier, string>> = COPY.downloader.qualityLabels
-const QUALITY_VALUES: readonly QualityTier[] = [2160, 1440, 1080, 720, 480]
+const QUALITY_VALUES: readonly QualityTier[] = [4320, 2160, 1440, 1080, 720, 480]
 const CONTAINERS: readonly SelectOption[] = [
   { label: COPY.downloader.formats.mp4, value: 'mp4' },
   { label: COPY.downloader.formats.mkv, value: 'mkv' },
@@ -74,22 +74,25 @@ export function DownloadOptionsCard({
             { label: COPY.downloader.video, value: 'video' },
             { label: COPY.downloader.audio, value: 'audio' },
           ]}
+          size="compact"
           value={options.kind}
         />
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2.5">
+      <div className="mt-1.5 grid grid-cols-2 gap-2.5">
         {options.kind === 'video' ? (
           <>
             <Select
               label={COPY.downloader.quality}
               onChange={(value) => onChange('quality', Number(value) as QualityTier)}
               options={qualityOptions}
+              size="compact"
               value={String(options.quality)}
             />
             <Select
               label={COPY.downloader.container}
               onChange={(value) => onChange('container', value as VideoContainer)}
               options={CONTAINERS}
+              size="compact"
               value={options.container}
             />
           </>
@@ -99,6 +102,7 @@ export function DownloadOptionsCard({
               label={COPY.downloader.audioFormat}
               onChange={(value) => onChange('audioFormat', value as AudioFormat)}
               options={AUDIO_FORMATS}
+              size="compact"
               value={options.audioFormat}
             />
             <Select
@@ -106,12 +110,13 @@ export function DownloadOptionsCard({
               label={COPY.downloader.bitrate}
               onChange={(value) => onChange('bitrate', Number(value) as AudioBitrate)}
               options={bitrateOptions}
+              size="compact"
               value={String(options.bitrate)}
             />
           </>
         )}
       </div>
-      <div className="border-line-subtle text-fg-muted mt-2 flex items-center justify-between border-t pt-2 text-[10px]">
+      <div className="border-line-subtle text-fg-muted mt-auto flex items-center justify-between border-t pt-1.5 text-[10px]">
         <span className="flex items-center gap-1.5">
           <FileDown aria-hidden="true" className="text-accent size-3" />
           {COPY.downloader.estimatedSize}: {estimateIsApproximate ? '~' : ''}

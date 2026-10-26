@@ -89,6 +89,23 @@ describe('yt-dlp pure contracts', () => {
     expect(args).toContain('140')
   })
 
+  it('builds the generic 8K selector from the requested quality', () => {
+    const args = buildDownloadArgs(
+      {
+        ...job,
+        options: {
+          ...job.options,
+          quality: 4320,
+          videoFormatId: undefined,
+          audioFormatId: undefined,
+        },
+      },
+      { ffmpegPath: '/ffmpeg', forceGenericSelector: true },
+    )
+    const selectorIndex = args.indexOf('-f')
+    expect(args[selectorIndex + 1]).toContain('height<=4320')
+  })
+
   it('parses lenient probe data and rejects live streams', () => {
     const parsed = parseProbeJson(
       JSON.stringify({ id: '1', title: 'Clip', unknown: true, formats: [{ format_id: 'a' }] }),

@@ -51,7 +51,7 @@ Design personality: **dark obsidian glassmorphism with emerald-green accents**; 
 
 - Single-video and single-audio download from every site `yt-dlp` supports (YouTube, Facebook, Instagram, Vimeo, TikTok, X, Reddit, etc.).
 - Live URL validation, clipboard paste/auto-paste, rich metadata preview (thumbnail, title, uploader, duration, platform badge, views/upload date when available).
-- Video qualities **4K (2160p), 2K (1440p), 1080p, 720p, 480p** with **MP4 or MKV** container; audio extraction to **MP3, M4A, WAV** with **320/256/128 kbps** where applicable (WAV is lossless: bitrate control is disabled).
+- Video qualities **8K (4320p), 4K (2160p), 2K (1440p), 1080p, 720p, 480p** with **MP4 or MKV** container; audio extraction to **MP3, M4A, WAV** with **320/256/128 kbps** where applicable (WAV is lossless: bitrate control is disabled).
 - Estimated file size before download.
 - Background merge of best video + best audio via `ffmpeg`.
 - Download queue with real-time progress (percent, speed, ETA, downloaded/total), **pause, resume, cancel, retry**, open folder, quick play.
@@ -449,7 +449,7 @@ State machine of the URL card: `idle → typing → validating → probing → r
 1. **Hero input** (paste/clear buttons). Paste button reads the clipboard via `navigator.clipboard.readText()` guarded by try/catch (or main-process `clipboard`). If the *Auto-paste* setting is on, on window focus, if the clipboard holds a valid http(s) URL that differs from the last one handled, fill it and start probing (never overwrite a URL the user typed). `Enter` = probe/download; `Esc` = clear; `Cmd/Ctrl+V` anywhere on the screen focuses the input and pastes. Drag-and-drop of a link/text onto the window fills the input.
 2. **Live validation line:** syntactic check instantly (debounce 250 ms): `new URL`, `http(s)` only, ≤ 2048 chars. Then a **probe** (`yt-dlp -J --no-playlist`): shows "Reading link…" skeleton, then the green "Valid link detected: <Platform>" line and the preview. Probe has a 30 s timeout, is cancellable (changing the URL cancels the previous probe), and results are cached in memory per URL for the session.
 3. **Preview card:** thumbnail (16:9, duration badge inside with 8px inset, local cache/placeholder while loading, graceful fallback icon), title (2-line clamp), uploader (+ verified badge only if the metadata says so), platform pill (YouTube/Instagram/TikTok/Vimeo/Facebook/X/… with a generic fallback for others), meta chips (views, upload date — only if present). Playlist URL → info line "Playlist detected — only the selected video will be downloaded." (uses `--no-playlist`).
-4. **Options card:** Video | Audio segmented toggle. *Video:* Quality (4K/2K/1080p/720p/480p — **disable and label "Not available" any quality the probed formats cannot provide**, and default to the best available ≤ the saved default), Container (MP4/MKV), live **estimated size** (see 8.4). *Audio:* Format (MP3/M4A/WAV) + Bitrate (320/256/128 kbps; disabled for WAV with a tooltip), optional "Embed cover & tags" if shown in the design. Persist last-used choices as defaults.
+4. **Options card:** Video | Audio segmented toggle. *Video:* Quality (8K/4K/2K/1080p/720p/480p — **disable and label "Not available" any quality the probed formats cannot provide**, and default to the best available ≤ the saved default), Container (MP4/MKV), live **estimated size** (see 8.4). *Audio:* Format (MP3/M4A/WAV) + Bitrate (320/256/128 kbps; disabled for WAV with a tooltip), optional "Embed cover & tags" if shown in the design. Persist last-used choices as defaults.
 5. **Save location row:** current folder + `Change` (native picker via IPC) + free-space chip if the design has one (real value from `fs.statfs`, refreshed on open/change; **never** fabricate it).
 6. **CTA "Download Now":** disabled until a probe succeeded; click → enqueue job, button shows a brief loading state, a toast "Added to queue" with a "View queue" action, the tab badge increments; the URL card resets to idle (Cmd/Ctrl+Enter keeps the URL for downloading another quality). If disk space < estimated size × 1.1, warn before enqueuing.
 7. **Error states** with friendly copy and a recovery action (retry, update engine, change URL) mapped from `ErrorCode`.
@@ -873,7 +873,7 @@ Next: "Execute Phase N+1"
 
 ### 15.3 Final acceptance checklist for v1.0 (Phase 5 must prove each line)
 
-- [ ] Paste link → preview → download (video 4K/2K/1080p/720p/480p, MP4/MKV; audio MP3/M4A/WAV 320/256/128) works on real sites
+- [ ] Paste link → preview → download (video 8K/4K/2K/1080p/720p/480p, MP4/MKV; audio MP3/M4A/WAV 320/256/128) works on real sites
 - [ ] Queue: real progress/speed/ETA; pause, resume, cancel, retry; survives app restart
 - [ ] Library: search, filter, sort, open location, play, delete (history only / with file)
 - [ ] Settings: folder picker, engine status/update, every preference effective

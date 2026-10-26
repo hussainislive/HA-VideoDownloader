@@ -11,6 +11,7 @@ interface SegmentedControlProps<T extends string> {
   label: string
   onChange: (value: T) => void
   options: readonly SegmentOption<T>[]
+  size?: 'compact' | 'default'
   value: T
 }
 
@@ -18,6 +19,7 @@ export function SegmentedControl<T extends string>({
   label,
   onChange,
   options,
+  size = 'default',
   value,
 }: SegmentedControlProps<T>): React.JSX.Element {
   const layoutId = useId()
@@ -34,7 +36,8 @@ export function SegmentedControl<T extends string>({
           <button
             aria-pressed={active}
             className={cn(
-              'relative min-w-16 rounded-full px-3 py-1.5 text-[11px] font-semibold transition-colors',
+              'relative min-w-16 rounded-full px-3 text-[11px] font-semibold transition-colors',
+              size === 'compact' ? 'py-1' : 'py-1.5',
               active ? 'text-fg-heading' : 'text-fg-muted hover:text-fg-body',
             )}
             key={option.value}

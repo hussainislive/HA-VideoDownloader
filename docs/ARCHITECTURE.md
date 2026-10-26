@@ -261,10 +261,10 @@ jobs sort newest-first after active, queued, and paused work. List rows are
 solid and use `content-visibility`; progress animates by transform only.
 
 Downloader keeps transient URL/probe/options state local. It cancels stale
-main-process probes, derives quality availability and estimates from the real
-media formats, persists changed defaults through settings IPC, and sends a
-fully validated enqueue request. The title-bar engine pill is driven by the
-same live engine mirror.
+main-process probes, derives source-gated quality availability up to 8K
+(4320p) and estimates from the real media formats, persists changed defaults
+through settings IPC, and sends a fully validated enqueue request. The
+title-bar engine pill is driven by the same live engine mirror.
 
 Library keeps only query/filter/sort/delete-dialog state locally; its shared
 mirror refreshes on focus and history events. Its synchronous 5,000-item query

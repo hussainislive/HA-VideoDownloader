@@ -63,6 +63,23 @@ test('pastes, probes, selects 1080p MP4, downloads, and opens the folder', async
     .toContain('Fake Video [fake-id].mp4')
 })
 
+test('offers 8K only when the source provides an 8K format', async () => {
+  const { page } = current()
+  await pasteUrl('https://example.test/8k')
+  await page.getByRole('combobox', { name: 'Quality' }).click()
+  await page.getByRole('option', { name: '8K (4320p)' }).click()
+  await expect(page.getByRole('button', { name: /^Download Now/u })).toContainText('4320p')
+  await page.getByRole('button', { name: /^Download Now/u }).click()
+  await page.getByRole('button', { name: 'View Queue' }).click()
+  await expect(page.locator('[data-state="completed"]')).toBeVisible()
+
+  const snapshot = await page.evaluate(() => window.api.downloads.list())
+  expect(snapshot.ok && snapshot.value.jobs[0]?.options).toMatchObject({
+    quality: 4320,
+    videoFormatId: 'v4320',
+  })
+})
+
 test('reuses preview metadata and shows preparation before real progress', async () => {
   const { page } = current()
   await addFromDownloader('https://example.test/cached-only')

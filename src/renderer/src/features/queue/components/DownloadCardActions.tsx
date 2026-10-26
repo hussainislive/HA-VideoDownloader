@@ -2,8 +2,9 @@ import { Button } from '@renderer/components/ui/Button'
 import { IconButton } from '@renderer/components/ui/IconButton'
 import { COPY } from '@renderer/lib/copy'
 import type { DownloadJob } from '@shared/types/download'
-import { Copy, Ellipsis, FolderOpen, Pause, Play, RotateCcw, Trash2, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { FolderOpen, Pause, Play, RotateCcw, X } from 'lucide-react'
+
+import { DownloadOverflowMenu } from './DownloadOverflowMenu'
 
 interface DownloadCardActionsProps {
   job: DownloadJob
@@ -30,23 +31,6 @@ export function DownloadCardActions({
   onRemove,
   onRun,
 }: DownloadCardActionsProps): React.JSX.Element {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!menuOpen) return
-    const close = (event: MouseEvent | KeyboardEvent): void => {
-      if (event instanceof KeyboardEvent && event.key !== 'Escape') return
-      if (event instanceof MouseEvent && menuRef.current?.contains(event.target as Node)) return
-      setMenuOpen(false)
-    }
-    document.addEventListener('mousedown', close)
-    document.addEventListener('keydown', close)
-    return () => {
-      document.removeEventListener('mousedown', close)
-      document.removeEventListener('keydown', close)
-    }
-  }, [menuOpen])
-
   if (job.state === 'completed') {
     const filePath = job.filePath
     return (
@@ -67,39 +51,7 @@ export function DownloadCardActions({
         >
           <Play aria-hidden="true" className="size-3.5" /> {COPY.queue.quickPlay}
         </Button>
-        <div className="relative" ref={menuRef}>
-          <IconButton label={COPY.queue.more} onClick={() => setMenuOpen((open) => !open)}>
-            <Ellipsis aria-hidden="true" className="size-4" />
-          </IconButton>
-          {menuOpen ? (
-            <div className="border-line-strong bg-surface-solid shadow-card absolute right-0 z-30 mt-1 w-36 rounded-xl border p-1 text-[10px]">
-              <button
-                className="hover:bg-surface-elevated flex w-full items-center gap-2 rounded-lg px-2.5 py-2"
-                onClick={onCopy}
-                type="button"
-              >
-                <Copy aria-hidden="true" className="size-3" />
-                {COPY.queue.copyLink}
-              </button>
-              <button
-                className="hover:bg-surface-elevated flex w-full items-center gap-2 rounded-lg px-2.5 py-2"
-                onClick={onRemove}
-                type="button"
-              >
-                <X aria-hidden="true" className="size-3" />
-                {COPY.queue.remove}
-              </button>
-              <button
-                className="text-danger hover:bg-danger-soft flex w-full items-center gap-2 rounded-lg px-2.5 py-2"
-                onClick={onDelete}
-                type="button"
-              >
-                <Trash2 aria-hidden="true" className="size-3" />
-                {COPY.queue.deleteFile}
-              </button>
-            </div>
-          ) : null}
-        </div>
+        <DownloadOverflowMenu id={job.id} onCopy={onCopy} onDelete={onDelete} onRemove={onRemove} />
       </div>
     )
   }

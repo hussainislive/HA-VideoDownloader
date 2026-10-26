@@ -17,6 +17,7 @@ const SettingsSchema = z.object({
     z.literal(1080),
     z.literal(1440),
     z.literal(2160),
+    z.literal(4320),
   ]),
   defaultContainer: z.enum(['mp4', 'mkv']),
   defaultAudioFormat: z.enum(['mp3', 'm4a', 'wav']),

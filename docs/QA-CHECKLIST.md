@@ -14,7 +14,7 @@ artifact SHA-256 plus **Help → Copy diagnostic info** output.
 
 ## Every platform
 
-- [ ] Paste/drop URL → preview → all available video qualities and MP4/MKV.
+- [ ] Paste/drop URL → preview → all available video qualities through source-gated 8K and MP4/MKV.
 - [ ] MP3, M4A, WAV; bitrate disabled for WAV; metadata behavior correct.
 - [ ] Queue progress/speed/ETA, pause, resume, cancel, retry, relaunch recovery.
 - [ ] Library search/filter/sort/play/reveal and both delete choices.

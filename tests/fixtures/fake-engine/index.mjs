@@ -48,6 +48,18 @@ if (args.includes('-J')) {
         : url,
       extractor_key: 'Fake',
       formats: [
+        ...(url.includes('8k')
+          ? [
+              {
+                format_id: 'v4320',
+                width: 7680,
+                height: 4320,
+                vcodec: 'av01',
+                acodec: 'none',
+                filesize: 8000000,
+              },
+            ]
+          : []),
         {
           format_id: 'v480',
           width: url.includes('vertical') ? 480 : 854,

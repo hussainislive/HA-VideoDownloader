@@ -1,5 +1,6 @@
 import { COPY } from '@renderer/lib/copy'
 import { type ReactNode, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 import { Button } from './Button'
 
@@ -51,7 +52,7 @@ export function ConfirmDialog({
   }, [onCancel, open])
 
   if (!open) return null
-  return (
+  return createPortal(
     <div
       className="bg-canvas-from/80 fixed inset-0 z-50 flex items-center justify-center p-6"
       role="presentation"
@@ -78,6 +79,7 @@ export function ConfirmDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

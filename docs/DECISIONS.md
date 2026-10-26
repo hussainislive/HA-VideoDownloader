@@ -264,3 +264,15 @@ Probe JSON remains outside queue persistence and renderer IPC because it can
 contain time-limited media URLs. The Queue stays in `starting` until real
 transfer progress arrives, and the first progress snapshot is emitted
 immediately so a short download is not hidden by the normal 200 ms batch.
+
+## ADR-025 — Treat 8K as a source-gated quality tier
+
+**Status:** Accepted · **Date:** 2026-10-24
+
+The app supports 8K as a 4320p quality tier only when the probe reports a
+video stream that reaches the existing shorter-side tolerance. The normal
+default remains 1080p, explicit probed format IDs remain preferred, and the
+generic fallback is extended dynamically to `height<=4320`. The app merges
+the source streams without silently transcoding them, so file size and
+AV1/VP9 playback compatibility remain properties of the source, container,
+and the user's media player.
