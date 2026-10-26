@@ -42,6 +42,7 @@ Component tests cover Button state, Switch behavior, Select keyboard selection, 
 Phase 3 component and renderer-store tests additionally cover:
 
 - idle, probing, ready, and error URL-card states plus the keep-link shortcut;
+- source-gated 8K availability, selection, size estimation, IPC validation, and generic-selector fallback;
 - queued, starting, downloading, processing, paused, completed, failed, and canceled cards;
 - completed file actions and normalized-store object identity;
 - a React Profiler assertion showing one changed job re-renders its subscriber while an untouched job renders zero times.
@@ -83,6 +84,7 @@ Electron E2E covers:
 Phase 3 Electron E2E additionally covers:
 
 - paste → probe → 1080p/MP4 → enqueue → progress → completion toast → spied open-folder action;
+- an 8K probe → enabled 4320p selection → explicit 8K format download, while ordinary probes keep 8K disabled;
 - live queue badge counts, pause/resume/cancel confirmation, failure/retry, and audio extraction;
 - stale-probe cancellation and a ready engine status when launching the production bundle;
 - zero serious/critical axe findings on Downloader and Queue;
@@ -100,9 +102,9 @@ Phase 4 Electron E2E additionally covers:
 - axe checks on populated Library, Settings, and About states plus the existing all-five-screen shell pass;
 - reviewed visual baselines for every screen at 850×600, 1280×800, and 1920×1080, with explicit root and main-content horizontal-overflow assertions.
 
-The 1.0.1 gate passed 111 Vitest tests across 30 files and 35 deterministic
+The current gate passes 116 Vitest tests across 30 files and 37 deterministic
 Electron E2E tests. All six opt-in live tests and all three finite performance
-tests passed separately.
+tests passed separately during the 1.0.1 release verification.
 
 axe uses its documented legacy aggregation mode because Playwright's default blank-page aggregator cannot create a second target through Electron automation. The application has no frames, so cross-origin frame coverage is not lost.
 
@@ -116,7 +118,7 @@ No production UI contains fake job, history, engine, storage, or throughput data
 
 The fake engine lives at `tests/fixtures/fake-engine/index.mjs`. Its magic URL
 paths include `/ok`, `/slow`, `/crash`, `/stall`, `/merge-fail`,
-`/disk-full`, `/fail-403`, `/private`, `/geo`, `/audio`, and `/vertical`.
+`/disk-full`, `/fail-403`, `/private`, `/geo`, `/audio`, `/vertical`, and `/8k`.
 It emits real `HA|…` progress lines and `HAFILE|…`, writes real output/partial
 files, and handles SIGTERM. `HA_TEST_ENGINE_SCRIPT`, `HA_YTDLP_PATH`, and
 `HA_FFMPEG_PATH` are honored only by unpackaged builds.

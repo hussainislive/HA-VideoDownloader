@@ -1,6 +1,6 @@
 import type { AudioBitrate, MediaFormat, QualityTier, SizeEstimate } from '../types/media'
 
-const QUALITY_TIERS: readonly QualityTier[] = [2160, 1440, 1080, 720, 480]
+const QUALITY_TIERS: readonly QualityTier[] = [4320, 2160, 1440, 1080, 720, 480]
 
 function hasVideo(format: MediaFormat): boolean {
   return Boolean(format.vcodec && format.vcodec !== 'none')

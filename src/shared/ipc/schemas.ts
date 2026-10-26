@@ -14,6 +14,7 @@ const QualitySchema = z.union([
   z.literal(1080),
   z.literal(1440),
   z.literal(2160),
+  z.literal(4320),
 ])
 
 const DownloadOptionsSchema = z.object({

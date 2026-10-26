@@ -31,6 +31,27 @@ describe('format selection and estimates', () => {
     expect(selectVideoFormat(vertical, 1080)?.id).toBe('short')
   })
 
+  it('offers and selects a genuine 8K format', () => {
+    const eightK: MediaFormat[] = [
+      {
+        id: 'v4320',
+        width: 7680,
+        height: 4320,
+        vcodec: 'av01',
+        acodec: 'none',
+        filesize: 8_000_000,
+      },
+      { id: 'audio', vcodec: 'none', acodec: 'mp4a', filesize: 100_000 },
+    ]
+
+    expect(availableQualityTiers(eightK)).toContain(4320)
+    expect(selectVideoFormat(eightK, 4320)?.id).toBe('v4320')
+    expect(estimateVideoSize(eightK, 4320)).toEqual({
+      bytes: 8_100_000,
+      approximate: false,
+    })
+  })
+
   it('combines video and audio size while preserving approximation', () => {
     expect(estimateVideoSize(formats, 1080, 10)).toEqual({ bytes: 2_100_000, approximate: true })
     expect(estimateAudioSize(10, 320)).toEqual({ bytes: 400_000, approximate: true })

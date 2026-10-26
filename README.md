@@ -33,6 +33,7 @@ HA Premium Video Downloader is a free, focused alternative to ad-heavy download 
 - ✅ Local fonts, semantic design tokens, and accessible UI primitives
 - ✅ Keyboard tab navigation and reduced-motion support
 - ✅ Real yt-dlp probing, format selection, size estimation, and friendly errors
+- ✅ Source-gated video qualities up to 8K (4320p), with MP4 and MKV output
 - ✅ Fast macOS engine startup after first-run preparation, with short-lived preview reuse for downloads
 - ✅ Persistent concurrent queue with pause, resume, retry, scoped cancellation, and recovery
 - ✅ Atomic settings/history/queue stores and on-demand engine updates
@@ -92,6 +93,8 @@ Future unsigned Windows builds may trigger SmartScreen; choose **More info**, th
 ## Quick start
 
 Paste or drop a video/audio link into Downloader. Once the preview is ready, choose video quality and container—or switch to audio format and bitrate—then select a save folder and add it to Queue. Completed files appear in Library, while Settings controls defaults, concurrency, notifications, clipboard behavior, and window priority.
+
+8K appears only when the source exposes a genuine 4320p stream. These files can be very large, and AV1/VP9 playback support depends on the selected container and your media player; the app merges the original streams without silently re-encoding them.
 
 | Shortcut               | Action                                              |
 | ---------------------- | --------------------------------------------------- |

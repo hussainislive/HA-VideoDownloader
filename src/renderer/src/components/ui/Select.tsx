@@ -14,6 +14,7 @@ interface SelectProps {
   label: string
   onChange: (value: string) => void
   options: readonly SelectOption[]
+  size?: 'compact' | 'default'
   value: string
 }
 
@@ -22,6 +23,7 @@ export function Select({
   label,
   onChange,
   options,
+  size = 'default',
   value,
 }: SelectProps): React.JSX.Element {
   const id = useId()
@@ -66,7 +68,7 @@ export function Select({
 
   return (
     <div
-      className="relative flex min-w-40 flex-col gap-1.5"
+      className={cn('relative flex min-w-40 flex-col', size === 'compact' ? 'gap-1' : 'gap-1.5')}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
       }}
@@ -80,7 +82,10 @@ export function Select({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-labelledby={`${id}-label`}
-        className="border-line bg-surface-elevated text-fg-heading hover:border-line-strong flex h-9 items-center justify-between gap-3 rounded-xl border px-3 text-left text-xs transition-[border-color,opacity] disabled:cursor-not-allowed disabled:opacity-45"
+        className={cn(
+          'border-line bg-surface-elevated text-fg-heading hover:border-line-strong flex items-center justify-between gap-3 rounded-xl border px-3 text-left text-xs transition-[border-color,opacity] disabled:cursor-not-allowed disabled:opacity-45',
+          size === 'compact' ? 'h-8' : 'h-9',
+        )}
         disabled={disabled}
         onClick={() => {
           setActiveIndex(selectedIndex)

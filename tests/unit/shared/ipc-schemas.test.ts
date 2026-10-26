@@ -2,6 +2,7 @@ import {
   EmptyInputSchema,
   OpenExternalInputSchema,
   PathInputSchema,
+  SettingsUpdateInputSchema,
   TextInputSchema,
 } from '@shared/ipc/schemas'
 import { describe, expect, it } from 'vitest'
@@ -23,5 +24,10 @@ describe('IPC schemas', () => {
     expect(TextInputSchema.safeParse({ text: 'https://example.test' }).success).toBe(true)
     expect(TextInputSchema.safeParse({ text: 'x'.repeat(4_097) }).success).toBe(false)
     expect(PathInputSchema.safeParse({ path: '/tmp/downloads' }).success).toBe(true)
+  })
+
+  it('accepts 8K and rejects unknown quality tiers', () => {
+    expect(SettingsUpdateInputSchema.safeParse({ defaultQuality: 4320 }).success).toBe(true)
+    expect(SettingsUpdateInputSchema.safeParse({ defaultQuality: 8640 }).success).toBe(false)
   })
 })

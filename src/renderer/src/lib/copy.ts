@@ -43,6 +43,7 @@ export const COPY = {
     bitrate: 'Bitrate',
     bitrateValue: (bitrate: number) => `${bitrate} kbps`,
     qualityLabels: {
+      4320: '8K (4320p)',
       2160: '4K (2160p)',
       1440: '2K (1440p)',
       1080: 'Full HD (1080p)',

@@ -71,7 +71,7 @@ test('persists Settings and window state across a real relaunch', async () => {
   await page.getByRole('tab', { name: 'Settings' }).click()
   await page.getByRole('switch', { name: 'Keep window on top' }).click()
   await page.getByRole('combobox', { name: 'Default quality' }).click()
-  await page.getByRole('option', { name: 'HD (720p)' }).click()
+  await page.getByRole('option', { name: '8K (4320p)' }).click()
   await page.getByRole('combobox', { name: 'Concurrent downloads' }).click()
   await page.getByRole('option', { name: '4' }).click()
   await expect(page.getByText('Saved')).toBeVisible()
@@ -88,7 +88,7 @@ test('persists Settings and window state across a real relaunch', async () => {
     'aria-checked',
     'true',
   )
-  await expect(page.getByRole('combobox', { name: 'Default quality' })).toContainText('HD (720p)')
+  await expect(page.getByRole('combobox', { name: 'Default quality' })).toContainText('8K (4320p)')
   await expect(page.getByRole('combobox', { name: 'Concurrent downloads' })).toContainText('4')
   const relaunchedWindow = await app.browserWindow(page)
   await expect

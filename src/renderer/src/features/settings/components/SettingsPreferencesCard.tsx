@@ -7,6 +7,7 @@ import type { Settings, SettingsUpdate } from '@shared/types/settings'
 import { SlidersHorizontal } from 'lucide-react'
 
 const QUALITY_OPTIONS = [
+  { value: '4320', label: COPY.downloader.qualityLabels[4320] },
   { value: '2160', label: COPY.downloader.qualityLabels[2160] },
   { value: '1440', label: COPY.downloader.qualityLabels[1440] },
   { value: '1080', label: COPY.downloader.qualityLabels[1080] },
@@ -22,6 +23,7 @@ const CONCURRENCY_OPTIONS = [1, 2, 3, 4].map((value) => ({
   label: String(value),
 }))
 const QUALITY_VALUES: Readonly<Record<string, QualityTier>> = {
+  '4320': 4320,
   '2160': 2160,
   '1440': 1440,
   '1080': 1080,

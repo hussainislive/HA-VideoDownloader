@@ -31,7 +31,7 @@ export type DownloadKind = 'video' | 'audio'
 export type VideoContainer = 'mp4' | 'mkv'
 export type AudioFormat = 'mp3' | 'm4a' | 'wav'
 export type AudioBitrate = 128 | 256 | 320
-export type QualityTier = 480 | 720 | 1080 | 1440 | 2160
+export type QualityTier = 480 | 720 | 1080 | 1440 | 2160 | 4320
 
 export interface DownloadOptions {
   kind: DownloadKind

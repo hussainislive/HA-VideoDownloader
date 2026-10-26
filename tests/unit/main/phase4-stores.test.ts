@@ -39,10 +39,11 @@ describe('Phase 4 persistence services', () => {
     )
     const store = new SettingsStore(directory, downloads)
     expect(await store.initialize()).toMatchObject({ schemaVersion: 2, keepWindowOnTop: false })
-    await store.update({ keepWindowOnTop: true })
+    await store.update({ defaultQuality: 4320, keepWindowOnTop: true })
     await store.flush()
     expect(JSON.parse(await readFile(join(directory, 'settings.json'), 'utf8'))).toMatchObject({
       schemaVersion: 2,
+      defaultQuality: 4320,
       keepWindowOnTop: true,
     })
   })

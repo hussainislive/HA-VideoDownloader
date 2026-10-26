@@ -101,12 +101,37 @@ describe('DownloadCard', () => {
     expect(screen.getByRole('button', { name: 'Quick Play' })).toBeEnabled()
   })
 
+  it('portals the completed actions menu outside the download card', async () => {
+    const user = userEvent.setup()
+    show('completed')
+    const trigger = screen.getByRole('button', { name: 'More actions' })
+
+    await user.click(trigger)
+
+    const menu = screen.getByRole('menu', { name: 'More actions' })
+    expect(menu.parentElement).toBe(document.body)
+    expect(menu.closest('[data-job-id]')).toBeNull()
+    expect(menu).toHaveClass('fixed', 'z-50')
+    expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  })
+
   it('copies a completed download link and confirms it', async () => {
     const user = userEvent.setup()
     show('completed')
     await user.click(screen.getByRole('button', { name: 'More actions' }))
-    await user.click(screen.getByRole('button', { name: 'Copy link' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Copy link' }))
     expect(writeText).toHaveBeenCalledWith('https://example.test/video')
     expect(await screen.findByText('Link copied')).toBeVisible()
+  })
+
+  it('portals delete confirmation outside the download card', async () => {
+    const user = userEvent.setup()
+    show('completed')
+    await user.click(screen.getByRole('button', { name: 'More actions' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Delete file' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Delete this downloaded file?' })
+    expect(dialog.parentElement?.parentElement).toBe(document.body)
+    expect(dialog.closest('[data-job-id]')).toBeNull()
   })
 })

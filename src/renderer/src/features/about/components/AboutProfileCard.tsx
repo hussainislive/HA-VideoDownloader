@@ -27,7 +27,7 @@ export function AboutProfileCard({
           ) : (
             <img
               alt={COPY.about.photoAlt}
-              className="h-full w-full scale-[1.38] object-cover object-[center_24%]"
+              className="h-full w-full -translate-y-[-7%] scale-[1.70] object-cover"
               decoding="async"
               height={118}
               onError={() => setPhotoFailed(true)}
