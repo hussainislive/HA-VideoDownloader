@@ -17,6 +17,13 @@ export function completedJob(job: DownloadJob, filePath: string): DownloadJob {
   }
 }
 
+export function unexpectedDownloadFailure(job: DownloadJob, message: string): DownloadJob {
+  return {
+    ...transitionJob(job, 'failed', false),
+    error: { code: 'UNKNOWN', message, retryable: true },
+  }
+}
+
 export function failedOrRetryJob(job: DownloadJob, error: AppError): DownloadJob {
   if (
     job.usedCachedProbe &&

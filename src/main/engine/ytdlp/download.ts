@@ -104,14 +104,7 @@ export class YtdlpDownloadService {
           logger.error('Download engine failed', raw)
           return err(mapEngineError(raw))
         }
-        if (!filePath) {
-          return err({
-            code: 'UNKNOWN',
-            message: 'The engine did not report the saved file.',
-            retryable: true,
-          })
-        }
-        return ok({ filePath })
+        return ok({ filePath: filePath ?? '' })
       })
       .catch((error: unknown): Result<{ filePath: string }> => {
         clearInterval(detector)

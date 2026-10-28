@@ -11,7 +11,10 @@ test.describe('Phase 3 real UI smoke @live', () => {
   test.describe.configure({ timeout: 180_000 })
 
   test.beforeEach(async () => {
-    test.skip(process.platform !== 'darwin', 'Owner-required live gate runs on macOS')
+    test.skip(
+      process.platform !== 'darwin' && process.platform !== 'win32',
+      'Live UI smoke runs on macOS or Windows',
+    )
     launched = await launchElectronApp({
       settings: { defaultContainer: 'mkv', defaultQuality: 480, embedMetadata: false },
     })
@@ -39,5 +42,8 @@ test.describe('Phase 3 real UI smoke @live', () => {
     const filePath = completed?.filePath ?? ''
     await expect(access(filePath)).resolves.toBeUndefined()
     expect((await stat(filePath)).size).toBeGreaterThan(0)
+    const library = await page.evaluate(() => window.api.library.list())
+    if (!library.ok) throw new Error(library.error.message)
+    expect(library.value.find(({ id }) => id === completed?.id)?.filePath).toBe(filePath)
   })
 })

@@ -5,12 +5,12 @@ artifact SHA-256 plus **Help → Copy diagnostic info** output.
 
 ## Platform matrix
 
-| Platform            | Build/install | Core download                     | OS integration                        | Status                        |
-| ------------------- | ------------- | --------------------------------- | ------------------------------------- | ----------------------------- |
-| macOS Intel         | x64 DMG       | video, audio, pause/resume/cancel | traffic lights, Dock, notification    | v1.0.1 packaged live verified |
-| macOS Apple Silicon | arm64 DMG     | video, audio, pause/resume/cancel | native Kind=Apple, Dock, notification | v1.0.1 static only            |
-| Windows 10 x64      | NSIS x64      | video, audio, pause/resume/cancel | controls, taskbar, notification       | Needs owner                   |
-| Windows 11 x64      | NSIS x64      | video, audio, pause/resume/cancel | Snap, controls, taskbar, notification | Needs owner                   |
+| Platform            | Build/install | Core download                     | OS integration                        | Status                     |
+| ------------------- | ------------- | --------------------------------- | ------------------------------------- | -------------------------- |
+| macOS Intel         | x64 DMG       | video, audio, pause/resume/cancel | traffic lights, Dock, notification    | 1.0.2 packaged live passed |
+| macOS Apple Silicon | arm64 DMG     | video, audio, pause/resume/cancel | native Kind=Apple, Dock, notification | 1.0.2 static checks passed |
+| Windows 10 x64      | NSIS x64      | video, audio, pause/resume/cancel | controls, taskbar, notification       | 1.0.2 native smoke pending |
+| Windows 11 x64      | NSIS x64      | video, audio, pause/resume/cancel | Snap, controls, taskbar, notification | Needs owner                |
 
 ## Every platform
 
@@ -26,6 +26,9 @@ artifact SHA-256 plus **Help → Copy diagnostic info** output.
       reduced motion, and contrast.
 - [ ] 850×600, 1280×800, and 1920×1080 layouts have no horizontal overflow.
 - [ ] No console windows, zombies, or unrelated partial-file deletion.
+- [ ] On Windows, download a video with a long Unicode title; Queue reaches
+      Completed, Library shows the same nonempty file path, and no 0-byte
+      output is mistaken for success. Retry a deliberate failure.
 - [ ] Unsigned-app warning instructions match the actual OS wording.
 
 ## Release package

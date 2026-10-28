@@ -45,6 +45,8 @@ export function buildDownloadArgs(job: DownloadJob, context: DownloadArgumentsCo
     '--newline',
     '--no-colors',
     '--ignore-config',
+    '--encoding',
+    'utf-8',
     '--windows-filenames',
     '--trim-filenames',
     '180',

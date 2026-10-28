@@ -6,6 +6,7 @@ import type {
   DownloadSnapshot,
   EnqueueDownloadInput,
 } from '@shared/types/download'
+import { err } from '@shared/types/result'
 
 import type { DownloadRun } from '../engine/ytdlp/download'
 import { logger } from '../logger'
@@ -13,14 +14,16 @@ import { cleanupJobPartials } from '../services/filename'
 import type { HistoryStore } from '../services/history-store'
 import type { QueueStore } from '../services/queue-store'
 import type { DownloadEngine, DownloadManagerHooks } from './contracts'
-import { completedJob, failedOrRetryJob } from './download-outcome'
+import { completedJob, failedOrRetryJob, unexpectedDownloadFailure } from './download-outcome'
 import { recoverJobs, transitionJob } from './job'
+import { verifyCompletedOutput } from './verified-output'
 
 export class DownloadManager {
   readonly #listeners = new Set<(snapshot: DownloadSnapshot) => void>()
   readonly #active = new Map<string, DownloadRun>()
   readonly #desired = new Map<string, 'pause' | 'cancel'>()
   readonly #settling = new Map<string, Promise<void>>()
+  readonly #finalizing = new Set<string>()
   readonly #recoveryIds = new Set<string>()
   #jobs: DownloadJob[] = []
   #maxConcurrent = 2
@@ -80,6 +83,10 @@ export class DownloadManager {
   async pause(id: string): Promise<DownloadJob> {
     const job = this.#require(id)
     if (job.state === 'paused') return structuredClone(job)
+    if (this.#finalizing.has(id)) {
+      await this.#settling.get(id)
+      return structuredClone(this.#require(id))
+    }
     const run = this.#active.get(id)
     if (!run) throw new Error('Only an active download can be paused')
     this.#desired.set(id, 'pause')
@@ -91,6 +98,10 @@ export class DownloadManager {
   async cancel(id: string): Promise<DownloadJob> {
     const job = this.#require(id)
     if (job.state === 'canceled') return structuredClone(job)
+    if (this.#finalizing.has(id)) {
+      await this.#settling.get(id)
+      return structuredClone(this.#require(id))
+    }
     const run = this.#active.get(id)
     if (run) {
       this.#desired.set(id, 'cancel')
@@ -173,14 +184,44 @@ export class DownloadManager {
     let current = transitionJob(job, 'starting', process.env.NODE_ENV !== 'production')
     current = { ...current, attempt: current.attempt + 1 }
     this.#replace(current)
-    const run = this.engine.start(current, {
-      onActivity: () => undefined,
-      onProgress: (progress) => this.#onProgress(current.id, progress),
-    })
+    let run: DownloadRun
+    try {
+      run = this.engine.start(current, {
+        onActivity: () => undefined,
+        onProgress: (progress) => this.#onProgress(current.id, progress),
+      })
+    } catch (error) {
+      logger.error('Download engine could not start', error)
+      const failed = unexpectedDownloadFailure(
+        current,
+        'The download engine could not start. Retry the download.',
+      )
+      this.#replace(failed)
+      try {
+        this.hooks.failed(failed)
+      } catch (hookError) {
+        logger.error('Download failure notification failed', hookError)
+      }
+      this.#changed(true)
+      return
+    }
     this.#active.set(current.id, run)
     this.#replace({ ...current, usedCachedProbe: run.usedCachedProbe === true })
     this.#changed(true)
-    const settling = run.completion.then((result) => this.#finish(current.id, result))
+    const settling = run.completion.then(
+      (result) => this.#finish(current.id, result),
+      (error: unknown) => {
+        logger.error('Download engine stopped unexpectedly', error)
+        return this.#finish(
+          current.id,
+          err({
+            code: 'UNKNOWN',
+            message: 'The download engine stopped unexpectedly. Retry the download.',
+            retryable: true,
+          }),
+        )
+      },
+    )
     this.#settling.set(current.id, settling)
     void settling.then(
       () => this.#settling.delete(current.id),
@@ -207,29 +248,49 @@ export class DownloadManager {
   }
 
   async #finish(id: string, result: Awaited<DownloadRun['completion']>): Promise<void> {
-    const desired = this.#desired.get(id)
-    this.#desired.delete(id)
-    this.#active.delete(id)
-    const job = this.#require(id)
-    if (desired === 'pause') this.#replace(transitionJob(job, 'paused', false))
-    else if (desired === 'cancel') {
-      this.#replace(transitionJob(job, 'canceled', false))
-      await cleanupJobPartials(job.outputDir, job.title, job.mediaId)
-    } else if (result.ok) {
-      const completed = completedJob(job, result.value.filePath)
-      const historyItem = await this.history.append(completed)
-      const withSize = historyItem
-        ? { ...completed, fileSizeBytes: historyItem.fileSize }
-        : completed
-      this.#replace(withSize)
-      this.hooks.completed(withSize)
-    } else {
-      const failed = failedOrRetryJob(job, result.error)
-      this.#replace(failed)
-      if (failed.state === 'failed') this.hooks.failed(failed)
+    this.#finalizing.add(id)
+    try {
+      const desired = this.#desired.get(id)
+      const job = this.#require(id)
+      if (desired === 'pause') this.#replace(transitionJob(job, 'paused', false))
+      else if (desired === 'cancel') {
+        this.#replace(transitionJob(job, 'canceled', false))
+        await cleanupJobPartials(job.outputDir, job.title, job.mediaId)
+      } else if (result.ok) {
+        const verified = await verifyCompletedOutput(job, result.value.filePath)
+        const completed = completedJob(job, verified.path)
+        const historyItem = await this.history.append(completed)
+        if (!historyItem) throw new Error('The verified media file was not added to Library.')
+        const withSize = { ...completed, fileSizeBytes: historyItem.fileSize }
+        this.#replace(withSize)
+        this.hooks.completed(withSize)
+      } else {
+        const failed = failedOrRetryJob(job, result.error)
+        this.#replace(failed)
+        if (failed.state === 'failed') this.hooks.failed(failed)
+      }
+    } catch (error) {
+      logger.error('Download finalization failed', error)
+      const job = this.#require(id)
+      if (!['completed', 'failed', 'canceled', 'paused'].includes(job.state)) {
+        const failed = unexpectedDownloadFailure(
+          job,
+          'The downloaded file could not be verified. Check the folder and retry.',
+        )
+        this.#replace(failed)
+        try {
+          this.hooks.failed(failed)
+        } catch (hookError) {
+          logger.error('Download failure notification failed', hookError)
+        }
+      }
+    } finally {
+      this.#desired.delete(id)
+      this.#finalizing.delete(id)
+      this.#active.delete(id)
+      this.#changed(true)
+      this.#pump()
     }
-    this.#changed(true)
-    this.#pump()
   }
 
   #require(id: string): DownloadJob {

@@ -68,6 +68,7 @@ export class HistoryStore {
   async append(job: DownloadJob): Promise<HistoryItem | undefined> {
     if (!job.filePath) return undefined
     const file = await stat(job.filePath)
+    if (!file.isFile() || file.size === 0) throw new Error('The completed media file is empty.')
     const item: HistoryItem = {
       id: job.id,
       url: job.url,

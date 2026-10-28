@@ -276,3 +276,17 @@ generic fallback is extended dynamically to `height<=4320`. The app merges
 the source streams without silently transcoding them, so file size and
 AV1/VP9 playback compatibility remain properties of the source, container,
 and the user's media player.
+
+## ADR-026 — Verify saved media before completing a Queue job
+
+**Status:** Accepted · **Date:** 2026-10-28
+
+Windows can report a Unicode output path differently from the filename on
+disk. yt-dlp now emits UTF-8 explicitly, while the main process verifies the
+reported file and falls back to a single scan of the selected folder for one
+nonempty media file with the same source ID. A missing or ambiguous result is
+a retryable failure, never a completed Queue card or Library entry. The active
+slot remains owned through finalization and is released in a `finally` block,
+so a failed filesystem or history operation cannot strand the Queue. No
+filename is guessed from the title, and no duplicate or zero-byte file is
+deleted automatically.

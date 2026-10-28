@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-28
+
 ### Added
 
 - Add source-gated 8K (4320p) video selection, settings persistence, size estimation, validated IPC, and deterministic download coverage.
@@ -11,6 +13,11 @@ All notable changes to this project will be documented in this file. The format 
 ### Fixed
 
 - Keep the Downloader size estimate and metadata checkbox inside the options card with consistent bottom padding.
+- Keep Queue action menus and confirmation dialogs visible above scrolling content.
+- Force UTF-8 yt-dlp probe/download output and verify the completed file on disk before marking a Queue job complete.
+- Recover the actual Unicode filename when the reported path is missing or corrupted, while rejecting empty, ambiguous, or unrelated outputs.
+- Turn file verification, Library write, and engine promise failures into retryable Queue failures instead of leaving jobs stuck in finalization.
+- Make the packaged-binary path assertion portable and remove process-startup timing from the stall-retry and 50-job concurrency unit tests.
 
 ## [1.0.1] - 2026-10-13
 

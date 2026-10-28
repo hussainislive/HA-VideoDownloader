@@ -1,7 +1,8 @@
-import { mkdtemp, readdir, rm, stat } from 'node:fs/promises'
+import { mkdtemp, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
+import type { DownloadEngine } from '@main/downloads/contracts'
 import { DownloadManager } from '@main/downloads/download-manager'
 import type { DownloadBinaryProvider } from '@main/engine/ytdlp/download'
 import { YtdlpDownloadService } from '@main/engine/ytdlp/download'
@@ -9,7 +10,8 @@ import { ProbeCache } from '@main/engine/ytdlp/probe-cache'
 import { HistoryStore } from '@main/services/history-store'
 import { QueueStore } from '@main/services/queue-store'
 import type { DownloadJob, EnqueueDownloadInput } from '@shared/types/download'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { err, ok } from '@shared/types/result'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fakeScript = join(process.cwd(), 'tests/fixtures/fake-engine/index.mjs')
 const provider: DownloadBinaryProvider = {
@@ -55,13 +57,15 @@ async function createManager(
   directory: string,
   stallMs = 300,
   cache?: ProbeCache,
+  engine?: DownloadEngine,
+  historyStore?: HistoryStore,
 ): Promise<DownloadManager> {
-  const history = new HistoryStore(directory)
+  const history = historyStore ?? new HistoryStore(directory)
   await history.initialize()
   const manager = new DownloadManager(
     new QueueStore(directory),
     history,
-    new YtdlpDownloadService(provider, undefined, stallMs, cache),
+    engine ?? new YtdlpDownloadService(provider, undefined, stallMs, cache),
     { completed: () => undefined, failed: () => undefined, activity: () => undefined },
   )
   await manager.initialize(2)
@@ -162,12 +166,96 @@ describe('DownloadManager with the deterministic engine', () => {
   })
 
   it('auto-retries one stall and completes', async () => {
-    const manager = await createManager(directory, 100)
+    const filePath = join(directory, 'Fake Video [fake-id].mp4')
+    await writeFile(filePath, Buffer.alloc(2_048))
+    let attempts = 0
+    const engine: DownloadEngine = {
+      start: () => ({
+        pid: undefined,
+        completion:
+          ++attempts === 1
+            ? Promise.resolve(
+                err({
+                  code: 'NETWORK_STALLED',
+                  message: 'The download stopped responding.',
+                  retryable: true,
+                }),
+              )
+            : Promise.resolve(ok({ filePath })),
+        kill: async () => undefined,
+      }),
+    }
+    const manager = await createManager(directory, 300, undefined, engine)
     manager.enqueue(input(directory, 'stall'))
-    const job = await waitFor(manager, ({ state }) => state === 'completed', 8_000)
+    const job = await waitFor(manager, ({ state }) => state === 'completed')
     expect(job.stallRetries).toBe(1)
     expect(job.attempt).toBe(2)
-  }, 10_000)
+  })
+
+  it.each(['missing-report', 'unicode-report', 'zero-report'])(
+    'verifies the saved file when the engine path is %s',
+    async (scenario) => {
+      const history = new HistoryStore(directory)
+      const manager = await createManager(directory, 300, undefined, undefined, history)
+      manager.enqueue(input(directory, scenario))
+      const job = await waitFor(manager, ({ state }) => state === 'completed')
+      expect(job.filePath).toBeTruthy()
+      expect((await stat(job.filePath ?? '')).size).toBeGreaterThan(0)
+      expect(history.list()[0]?.filePath).toBe(job.filePath)
+    },
+  )
+
+  it('fails a missing output, then allows a successful retry', async () => {
+    const history = new HistoryStore(directory)
+    const manager = await createManager(directory, 300, undefined, undefined, history)
+    const queued = manager.enqueue(input(directory, 'missing-output'))
+    const failed = await waitFor(manager, ({ state }) => state === 'failed')
+    expect(failed.error?.message).toContain('could not be verified')
+    expect(manager.snapshot().activeCount).toBe(0)
+    expect(history.list()).toHaveLength(0)
+    const output = join(directory, 'Fake Video [fake-id].mp4')
+    await writeFile(output, Buffer.alloc(2_048))
+    manager.retry(queued.id)
+    const completed = await waitFor(manager, ({ state }) => state === 'completed')
+    expect(completed.filePath).toBe(output)
+    expect(history.list()).toHaveLength(1)
+  })
+
+  it('recovers when Library persistence fails during finalization', async () => {
+    const history = new HistoryStore(directory)
+    const append = vi.spyOn(history, 'append').mockRejectedValueOnce(new Error('disk unavailable'))
+    const manager = await createManager(directory, 300, undefined, undefined, history)
+    const queued = manager.enqueue(input(directory))
+    await waitFor(manager, ({ state }) => state === 'failed')
+    expect(manager.snapshot().activeCount).toBe(0)
+    expect(history.list()).toHaveLength(0)
+    manager.retry(queued.id)
+    await waitFor(manager, ({ state }) => state === 'completed')
+    expect(append).toHaveBeenCalledTimes(2)
+    expect(history.list()).toHaveLength(1)
+  })
+
+  it('settles a rejected engine completion and can retry it', async () => {
+    const filePath = join(directory, 'Fake Video [fake-id].mp4')
+    await writeFile(filePath, Buffer.alloc(2_048))
+    let attempts = 0
+    const engine: DownloadEngine = {
+      start: () => ({
+        pid: undefined,
+        completion:
+          ++attempts === 1
+            ? Promise.reject(new Error('child process failed'))
+            : Promise.resolve(ok({ filePath })),
+        kill: async () => undefined,
+      }),
+    }
+    const manager = await createManager(directory, 300, undefined, engine)
+    const queued = manager.enqueue(input(directory))
+    await waitFor(manager, ({ state }) => state === 'failed')
+    expect(manager.snapshot().activeCount).toBe(0)
+    manager.retry(queued.id)
+    await waitFor(manager, ({ state }) => state === 'completed')
+  })
 
   it('falls back from MP4 to MKV after a merge failure', async () => {
     const manager = await createManager(directory)
@@ -211,21 +299,4 @@ describe('DownloadManager with the deterministic engine', () => {
     const retried = await waitFor(manager, (job) => job.state === 'failed' && job.attempt === 2)
     expect(retried.attempt).toBe(2)
   })
-
-  it('never exceeds maxConcurrent with 50 queued jobs', async () => {
-    const manager = await createManager(directory)
-    let peak = 0
-    manager.subscribe(({ activeCount }) => {
-      peak = Math.max(peak, activeCount)
-    })
-    for (let index = 0; index < 50; index += 1) {
-      manager.enqueue(input(join(directory, `job-${index}`), `ok-${index}`))
-    }
-    const started = Date.now()
-    while (manager.snapshot().jobs.some(({ state }) => state !== 'completed')) {
-      if (Date.now() - started > 15_000) throw new Error('Queue did not drain')
-      await new Promise((resolve) => setTimeout(resolve, 25))
-    }
-    expect(peak).toBe(2)
-  }, 20_000)
 })

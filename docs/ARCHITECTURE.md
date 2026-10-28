@@ -110,6 +110,15 @@ reports a different canonical URL. Queue reports preparation until genuine
 transfer bytes arrive; the first progress event bypasses the normal 200 ms
 batch so short downloads remain visible.
 
+yt-dlp probe and download output explicitly uses UTF-8. After a successful
+engine exit, the manager verifies the reported final media file is nonempty
+and inside the selected folder. If the reported path cannot be opened (for
+example, because Windows decoded a Unicode filename differently), it scans
+that folder for one nonempty media file with the exact source ID suffix.
+Ambiguous or missing results fail the Queue job with a retry action. Library
+receives the verified path and size before Queue marks the job Completed;
+finalization failures release the active slot and leave the job retryable.
+
 `ProcessRunner` always uses argument arrays, `shell: false`, and
 `windowsHide: true`. macOS processes start in a dedicated process group so
 SIGTERM/SIGKILL reaches FFmpeg descendants. Windows uses hidden

@@ -14,7 +14,7 @@ describe('architecture-specific binary resolution', () => {
 
   it('resolves packaged binaries below the resources binaries directory', () => {
     expect(packagedBinaryRoot('/Applications/HA.app/Contents/Resources')).toBe(
-      '/Applications/HA.app/Contents/Resources/binaries',
+      join('/Applications/HA.app/Contents/Resources', 'binaries'),
     )
   })
 

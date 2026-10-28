@@ -99,7 +99,10 @@ await mkdir(outputDir, { recursive: true })
 const audioFormat = valueAfter('--audio-format')
 const container = audioFormat ?? valueAfter('--merge-output-format') ?? 'mp4'
 const selector = valueAfter('-f') ?? ''
-const finalPath = join(outputDir, `Fake Video [fake-id].${container}`)
+const finalPath = join(
+  outputDir,
+  `${url.includes('unicode-report') ? 'Føø｜视频' : 'Fake Video'} [fake-id].${container}`,
+)
 const partPath = `${finalPath}.part`
 await writeFile(partPath, Buffer.alloc(1_024))
 if (url.includes('existing')) {
@@ -152,5 +155,19 @@ for (let step = 1; step <= 10 && !stopped; step += 1) {
 process.stderr.write('[Merger] Merging formats into output\n')
 if (url.includes('merge-slow')) await new Promise((resolve) => setTimeout(resolve, 2_000))
 await writeFile(partPath, Buffer.alloc(2_048))
+if (url.includes('missing-output')) {
+  await rm(partPath)
+  process.stdout.write(`HAFILE|${finalPath}\n`)
+  process.exit(0)
+}
 await rename(partPath, finalPath)
-process.stdout.write(`HAFILE|${finalPath}\n`)
+if (url.includes('zero-report')) {
+  const validPath = join(outputDir, `Føø｜视频 [fake-id].${container}`)
+  await rename(finalPath, validPath)
+  await writeFile(finalPath, '')
+  process.stdout.write(`HAFILE|${finalPath}\n`)
+} else if (url.includes('unicode-report')) {
+  process.stdout.write(`HAFILE|${finalPath.replace('Føø｜视频', 'F��｜��')}\n`)
+} else if (!url.includes('missing-report')) {
+  process.stdout.write(`HAFILE|${finalPath}\n`)
+}

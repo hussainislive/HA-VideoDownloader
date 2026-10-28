@@ -149,6 +149,8 @@ export class MediaProbeService {
       '--no-playlist',
       '--no-warnings',
       '--ignore-config',
+      '--encoding',
+      'utf-8',
       '--skip-download',
       '--',
       url,

@@ -46,6 +46,8 @@ describe('yt-dlp pure contracts', () => {
       '--newline',
       '--no-colors',
       '--ignore-config',
+      '--encoding',
+      'utf-8',
       '--windows-filenames',
       '--trim-filenames',
       '180',

@@ -63,6 +63,24 @@ expiry and cleanup, stale-source fallback, immediate first progress, and
 canonical-URL reuse regressions. The deterministic Electron test confirms the
 Queue says **Preparing source…** until genuine progress arrives.
 
+The 1.0.2 regressions cover UTF-8 output arguments, Unicode path recovery,
+zero-byte and missing files, ambiguous source-ID matches, Library write
+failure, rejected engine promises, retry, and Queue/Library agreement. The
+50-job concurrency and single-stall retry unit tests use controlled in-memory
+engine results so Windows process startup speed cannot change their outcome;
+separate tests still exercise the real child-process runner and fake engine.
+The real UI smoke in `tests/e2e/phase3-live.spec.ts` runs on macOS and Windows
+and checks that a nonempty completed Queue file is recorded at the same path
+in Library. Run it on Windows after `npm run check` with:
+
+```powershell
+npx playwright test tests/e2e/phase3-live.spec.ts
+```
+
+The other opt-in live suites remain macOS-specific. Native Windows installer
+build and runtime validation must be performed on Windows; an Intel Mac can
+only run the macOS x64 package and statically inspect the arm64 package.
+
 Phase 2 unit and integration tests additionally cover:
 
 - streaming UTF-8/CRLF splitting, huge output, exit codes, and process-tree killing including a grandchild;
@@ -102,9 +120,12 @@ Phase 4 Electron E2E additionally covers:
 - axe checks on populated Library, Settings, and About states plus the existing all-five-screen shell pass;
 - reviewed visual baselines for every screen at 850×600, 1280×800, and 1920×1080, with explicit root and main-content horizontal-overflow assertions.
 
-The current gate passes 116 Vitest tests across 30 files and 37 deterministic
-Electron E2E tests. All six opt-in live tests and all three finite performance
-tests passed separately during the 1.0.1 release verification.
+The 1.0.2 macOS gate passes 129 Vitest tests across 33 files and 37 deterministic
+Electron E2E tests. All six opt-in live tests passed for 1.0.2, including the
+owner's three links and a real UI Queue/Library match. The x64 DMG passed a
+mounted real-download smoke; the arm64 DMG passed static checks only. The three
+finite performance tests passed separately during the 1.0.1 release
+verification and were not rerun for this fix.
 
 axe uses its documented legacy aggregation mode because Playwright's default blank-page aggregator cannot create a second target through Electron automation. The application has no frames, so cross-origin frame coverage is not lost.
 

@@ -24,6 +24,7 @@
 
 ## Last session
 
+- 2026-10-28: Implemented the 1.0.2 Windows video-finalization fix: explicit UTF-8 yt-dlp output, verified nonempty media paths with exact source-ID fallback, retryable terminal failures for missing/ambiguous output and Library write errors, and a finalization race guard for Queue actions. The three reported Windows unit failures were corrected without increasing timeouts. Node 24.21.0 `npm run check` passed with 129 Vitest and 37 deterministic Electron tests. All six opt-in macOS live tests passed, including real video/audio and the owner's Facebook, Instagram, and YouTube links. Both 1.0.2 DMGs passed package and disk-image verification; the x64 DMG passed a mounted launch and real Facebook download. The arm64 DMG is static-only on this Intel host; Windows 1.0.2 runtime verification remains required on Windows.
 - 2026-10-24: Added source-gated 8K (4320p) across format detection, validated IPC, settings persistence, Downloader/Settings UI, deterministic engine coverage, and user documentation while retaining 1080p as the default. `npm run check` passed with 116 Vitest and 37 Electron E2E tests.
 - 2026-10-13: Completed the Phase 5 engine-latency fix on `phase-5-engine-latency`. The supplied one-file macOS yt-dlp took 26–28 seconds for `--version`; the checksum-verified official unpackaged runtime returned in 0.42 seconds after its first security scan. A five-minute main-process probe cache now reuses fresh media information, retries the ordinary URL if stale/rejected, and keeps Queue in **Preparing source…** until real progress. Canonical-URL handling was verified against Facebook/Instagram behavior.
 - 2026-10-13: Node 24.21.0 `npm run check` passed (111 Vitest tests, 35 deterministic Electron E2E tests); all six opt-in live tests passed, including the owner's Facebook, Instagram, and YouTube links. Three finite performance tests passed with the documented Intel idle-memory deviation unchanged. The 1.0.1 x64 DMG passed static checks, a mounted launch, and a real packaged Facebook download; the arm64 DMG passed static checks only. Both DMGs passed `hdiutil verify` and SHA-256 verification. Only the four superseded 1.0.0 DMG/blockmap artifacts were removed; the installed v1 app and user downloads were not changed.
@@ -110,7 +111,7 @@
 
 ## Owner verification
 
-- Windows 10/11 behavior and packaging will require owner or CI verification.
+- The 1.0.2 Windows installer, video merge/finalization, Queue/Library agreement, and real UI smoke require a native Windows run.
 - Apple Silicon runtime behavior requires the owner's friend to follow the Phase 5 test guide.
-- The 1.0.1 Windows installer cannot be built on this macOS host under the project's native-host rule; it still requires a Windows machine.
+- Windows installers cannot be built on this macOS host under the project's native-host rule.
 - Run the public-release checklist before changing the repository from private to public.
